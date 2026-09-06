@@ -1,0 +1,111 @@
+# Travel Around Project - Viva & Presentation Preparation
+
+This document contains expected questions you might be asked during your viva and presentation, along with their answers.
+
+---
+
+## 1. Project Overview & General Questions
+
+**Q1: What is the main objective of this project?**
+**Answer:** 'Travel Around' is a comprehensive travel management platform. It allows users to plan trips, generate AI-powered itineraries using the Google Gemini AI, search for locations using Google Places API, manage bookings, and communicate in real-time with other users or organizers.
+
+**Q2: What technologies have you used in this project? (The Tech Stack)**
+**Answer:** 
+- **Frontend:** React.js, Vite (as the build tool), Tailwind CSS for styling, and Radix UI for accessible components.
+- **Backend:** Node.js with Express.js framework.
+- **Database:** MongoDB with Mongoose for Object Data Modeling (ODM).
+- **APIs:** Google Generative AI (Gemini) for itinerary generation and Google Places API for location searching.
+- **Real-time:** Socket.io for messaging and notifications.
+- **Authentication:** JWT (JSON Web Tokens) and Bcrypt.js for password hashing.
+
+**Q3: Why did you choose React for the frontend?**
+**Answer:** React allows for building a dynamic, single-page application (SPA) with a component-based architecture. This makes the code modular, reusable, and easy to maintain. Its virtual DOM also ensures efficient rendering.
+
+---
+
+## 2. Frontend Questions (React & UI)
+
+**Q4: What is Vite and why did you use it instead of Create React App (CRA)?**
+**Answer:** Vite is a modern frontend build tool that is significantly faster than CRA. It uses native ES modules for development and provides near-instant Hot Module Replacement (HMR).
+
+**Q5: How are you managing state in your application?**
+**Answer:** I am using React's built-in hooks like `useState` and `useEffect`. For global state (like user info), I am using React Context API (located in `client/src/context`).
+
+**Q6: What is the purpose of `react-router-dom` in your project?**
+**Answer:** It is used for client-side routing. It allows the application to navigate between different pages (like Home, Create Trip, My Trips) without reloading the entire page.
+
+---
+
+## 3. Backend Questions (Node.js & Express)
+
+**Q7: What is Middleware in Express? Can you give an example from your project?**
+**Answer:** Middleware functions are functions that have access to the request (req), response (res), and the next middleware function. An example in this project is the authentication middleware that checks if a user is logged in before allowing them to access certain routes (like creating a trip).
+
+**Q8: Why did you use MongoDB (a NoSQL database)?**
+**Answer:** MongoDB is flexible and scales well. Since travel data (trips, itineraries) can vary in structure, a document-oriented database like MongoDB allows us to store complex objects easily without rigid schemas.
+
+**Q9: What is the role of Mongoose in your project?**
+**Answer:** Mongoose is an ODM (Object Data Modeling) library for MongoDB and Node.js. It provides a straight-forward, schema-based solution to model application data, handles validation, and manages relationships between data.
+
+---
+
+## 4. Feature-Specific Questions (AI & APIs)
+
+**Q10: How does the AI itinerary generation work?**
+**Answer:** The itinerary generation is a complex multi-step process (housed in `client/src/service/AIModel.jsx`):
+1. **Geocoding:** We use the Nominatim (OpenStreetMap) API to get the Latitude and Longitude of the target location.
+2. **Real-Time Data Fetching:** We use the **Overpass API** to find actual hotels and tourist attractions near those coordinates.
+3. **Information Enrichment:** We fetch detailed descriptions from **Wikipedia** and dynamic images from **LoremFlickr/Unsplash**.
+4. **AI Orchestration:** Finally, all this gathered data is sent to **Google Gemini (gemini-1.5-flash)** with a structured prompt. The AI then organizes these specific places into a logical day-by-day plan based on the user's budget and traveler type.
+
+**Q11: Why did you use multiple APIs instead of just Gemini?**
+**Answer:** Gemini is great at logic, but its "real-world" data might be slightly outdated or lack specific geodata. By using **Overpass API** for the actual locations and then using **Gemini** to organize them, we get a "Hybrid AI" approach—guaranteeing that the places suggested actually exist and the plan is intelligent.
+
+**Q12: How did you implement real-time messaging?**
+**Answer:** We used **Socket.io**. It establishes a bi-directional, real-time communication channel between the client and the server. When a user sends a message, the server emits an event to the recipient, allowing for instant updates without page refreshes.
+
+**Q13: How are you handling location searches?**
+**Answer:** I used the `react-google-places-autocomplete` library, which integrates the Google Places API. This provides a user-friendly way to search for cities and landmarks with suggestions.
+
+---
+
+## 5. Security & Authentication
+
+**Q13: How is user authentication handled?**
+**Answer:** 
+1. **Password Hashing:** When a user signs up, their password is hashed using **Bcrypt.js**.
+2. **Session Management:** We use **Express Sessions** (`express-session`) stored in **MongoDB** via `connect-mongo`. This means users stay logged in even if the server restarts.
+3. **Secure Cookies:** The session ID is stored in a secure, `httpOnly` cookie on the client side.
+4. **Socket.io Authentication:** We share the session with Socket.io. This allows the server to know exactly *who* is connected to a socket without needing a separate handshake or token.
+
+**Q14: What is the benefit of using Sessions over JWT in this project?**
+**Answer:** Sessions allow for easier "Force Logout" (by deleting the session from the DB) and provide better security against XSS because the session ID is stored in an `httpOnly` cookie, which cannot be accessed by JavaScript.
+
+**Q15: What is Bcrypt and why is it important?**
+**Answer:** Bcrypt is a password-hashing function. It is important because we should never store plain-text passwords in the database. If the database is compromised, the attacker still won't have the actual passwords.
+
+**Q16: What is CORS?**
+**Answer:** CORS (Cross-Origin Resource Sharing) is a security feature that restricts web pages from making requests to a different domain than the one that served the web page. In this project, we configure CORS in the backend to allow the frontend (running on a different port/domain) to talk to the API.
+
+---
+
+## 7. Advanced Technical Concepts
+
+**Q17: What is a "Hybrid AI" approach?**
+**Answer:** It's combining deterministic data (from APIs like Overpass/Google Places) with probabilistic data (from Gemini AI). This ensures the application is both accurate (real places) and creative (intelligent planning).
+
+**Q18: How did you handle fallback mechanisms?**
+**Answer:** In `AIModel.jsx`, if the Overpass API or Gemini API fails, we have a robust fallback function (`getFallbackData`) that provides a default high-quality itinerary so the application never crashes and the user always sees a result.
+
+**Q19: What is `import.meta.env`?**
+**Answer:** In Vite, `import.meta.env` is used to access environment variables (stored in a `.env` file). This is a security best practice to keep sensitive info like API Keys out of the source code.
+
+---
+
+## 8. Practical Demonstration Tips
+
+- **Show the AI Flow:** Demonstrate how you create a trip and how the AI generates the plan. This is the "WOW" factor.
+- **Explain the Folder Structure:** Be ready to show where the backend routes are (`server/routes`) and where the frontend components are (`client/src/components`).
+- **Be Honest:** If asked about a library you didn't write yourself, explain *why* you chose to use it and *how* it helps the project.
+
+Good luck with your presentation! You've built a solid MERN stack application with modern AI integration.
