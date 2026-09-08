@@ -251,3 +251,107 @@
     font-size: 38px;
   }
 }
+
+/* Map Card Styling */
+.map-card {
+  margin-bottom: 20px;
+}
+
+.map-wrapper {
+  margin-top: 14px;
+  overflow: hidden;
+  border-radius: 14px;
+}
+
+/* Food Recommendations Styling */
+.food-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.food-spot-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(210, 213, 225, 0.6);
+  border-radius: 12px;
+}
+
+.food-icon {
+  font-size: 24px;
+}
+
+.food-info strong {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #171724;
+}
+
+.food-type-tag {
+  font-size: 11px;
+  background: #e0e7ff;
+  color: #4f46e5;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+
+.food-info p {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: #666674;
+}
+
+/* Vehicle Rentals Sidebar Styling */
+.rental-subtitle {
+  font-size: 13px;
+  color: #666674;
+  margin-bottom: 12px;
+}
+
+.vehicle-rentals-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.rental-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(210, 213, 225, 0.6);
+  border-radius: 10px;
+}
+
+.rental-icon {
+  font-size: 20px;
+}
+
+.rental-details strong {
+  font-size: 13px;
+  color: #171724;
+  display: block;
+}
+
+.rental-details p {
+  font-size: 12px;
+  color: #4f46e5;
+  font-weight: 600;
+  margin: 0;
+}
+
+.rental-badge {
+  font-size: 10px;
+  background: #4f46e5;
+  color: white;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-weight: 600;
+}

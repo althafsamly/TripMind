@@ -22,27 +22,119 @@ function PlanTrip() {
   const [groupSize, setGroupSize] = useState(3);
   const [interests, setInterests] = useState([]);
 
+  // Voice AI States
+  const [isListening, setIsListening] = useState(false);
+  const [transcriptText, setTranscriptText] = useState("");
+
   const navigate = useNavigate();
 
+  // Smart Parser for Voice AI
+  function parseAndFillForm(speechText) {
+    const text = speechText.toLowerCase();
+
+    // 1. Extract Destination
+    const knownDestinations = Object.keys(locationInterests);
+    const foundDestination = knownDestinations.find((loc) => text.includes(loc));
+    if (foundDestination) {
+      setDestination(foundDestination.charAt(0).toUpperCase() + foundDestination.slice(1));
+    }
+
+    // 2. Extract Budget
+    const budgetMatch = text.match(/(\d+[\d,]*\d+|\d+\s*k)/i);
+    if (budgetMatch) {
+      let rawBudget = budgetMatch[0].replace(/,/g, "");
+      if (rawBudget.toLowerCase().endsWith("k")) {
+        rawBudget = parseFloat(rawBudget) * 1000;
+      }
+      setBudget(rawBudget.toString());
+    }
+
+    // 3. Extract Trip Type & Group Size
+    if (text.includes("girlfriend") || text.includes("boyfriend") || text.includes("couple") || text.includes("partner")) {
+      setTripType("Couple");
+    } else if (text.includes("family")) {
+      setTripType("Family");
+    } else if (text.includes("friends") || text.includes("group")) {
+      setTripType("Friends");
+      const numMatch = text.match(/(\d+)\s*(people|friends|members|persons)/);
+      if (numMatch) setGroupSize(numMatch[1]);
+    } else if (text.includes("alone") || text.includes("solo")) {
+      setTripType("Solo");
+    }
+
+    // 4. Extract Duration
+    const daysMatch = text.match(/(\d+)\s*(days|day|night|nights)/);
+    const today = new Date();
+    const startStr = today.toISOString().split("T")[0];
+    setStartDate(startStr);
+
+    if (daysMatch) {
+      const numDays = parseInt(daysMatch[1]);
+      const calculatedEnd = new Date(today);
+      calculatedEnd.setDate(today.getDate() + numDays - 1);
+      setEndDate(calculatedEnd.toISOString().split("T")[0]);
+    } else {
+      setEndDate(startStr);
+    }
+
+    // 5. Extract Interests
+    const availableInterests = foundDestination 
+      ? locationInterests[foundDestination] 
+      : ["Beaches", "Whale Watching", "Nature", "Hiking", "History", "Culture", "Sightseeing", "Relaxation"];
+
+    const matchedInterests = availableInterests.filter((interest) =>
+      text.includes(interest.toLowerCase())
+    );
+
+    if (matchedInterests.length > 0) {
+      setInterests(matchedInterests);
+    }
+  }
+
+  function handleGlobalVoiceInput() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      alert("Voice input is not supported in your browser.");
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = "en-US";
+    recognition.start();
+    setIsListening(true);
+    setTranscriptText("Listening... Speak your trip details naturally.");
+
+    recognition.onresult = (event) => {
+      const speechToText = event.results[0][0].transcript;
+      setTranscriptText(`"${speechToText}"`);
+      parseAndFillForm(speechToText);
+      setIsListening(false);
+    };
+
+    recognition.onerror = () => {
+      setTranscriptText("Could not process voice input. Please try again.");
+      setIsListening(false);
+    };
+
+    recognition.onend = () => setIsListening(false);
+  }
+
   function getTravelerCount() {
-    if (tripType === "Solo") {
-      return 1;
-    }
-
-    if (tripType === "Couple") {
-      return 2;
-    }
-
+    if (tripType === "Solo") return 1;
+    if (tripType === "Couple") return 2;
     return Number(groupSize);
   }
 
   function getSuggestedInterests() {
-    return locationInterests[destination.trim().toLowerCase()] || [
-      "Food",
-      "Nature",
-      "Culture",
-      "Sightseeing",
-    ];
+    return (
+      locationInterests[destination.trim().toLowerCase()] || [
+        "Food",
+        "Nature",
+        "Culture",
+        "Sightseeing",
+      ]
+    );
   }
 
   function toggleInterest(interest) {
@@ -58,9 +150,7 @@ function PlanTrip() {
 
     const start = new Date(startDate);
     const end = new Date(endDate);
-
-    const days =
-      Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+    const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
 
     const tripData = {
       destination,
@@ -73,9 +163,7 @@ function PlanTrip() {
       interests,
     };
 
-    navigate("/trip-result", {
-      state: tripData,
-    });
+    navigate("/trip-result", { state: tripData });
   }
 
   return (
@@ -86,17 +174,28 @@ function PlanTrip() {
         <h1>Plan Your Next Adventure</h1>
 
         <p className="planner-description">
-          Tell TripMind AI about your Sri Lankan getaway and we'll create a
-          personalized travel plan for you.
+          Tell TripMind AI about your Sri Lankan getaway or click the button below to speak your trip naturally!
         </p>
 
+        {/* Global Voice AI Banner */}
+        <div className="voice-ai-banner">
+          <button
+            type="button"
+            className={`global-voice-button ${isListening ? "listening" : ""}`}
+            onClick={handleGlobalVoiceInput}
+          >
+            {isListening ? "🎙️ Listening to your plan..." : "🎤 Fill Form with Voice AI"}
+          </button>
+          {transcriptText && <p className="voice-transcript">{transcriptText}</p>}
+        </div>
+
         <form onSubmit={handleSubmit}>
+          {/* Destination */}
           <div className="form-group">
             <label>Destination</label>
-
             <input
               type="text"
-              placeholder="e.g. Ella, Kandy, Galle, Nuwara Eliya"
+              placeholder="e.g. Ella, Kandy, Galle, Mirissa"
               value={destination}
               onChange={(event) => {
                 setDestination(event.target.value);
@@ -106,10 +205,10 @@ function PlanTrip() {
             />
           </div>
 
+          {/* Dates */}
           <div className="form-row">
             <div className="form-group">
               <label>Start Date</label>
-
               <input
                 type="date"
                 value={startDate}
@@ -120,7 +219,6 @@ function PlanTrip() {
 
             <div className="form-group">
               <label>End Date</label>
-
               <input
                 type="date"
                 value={endDate}
@@ -131,21 +229,21 @@ function PlanTrip() {
             </div>
           </div>
 
+          {/* Budget */}
           <div className="form-group">
             <label>Budget (LKR)</label>
-
             <input
               type="number"
-              placeholder="e.g. 75000"
+              placeholder="e.g. 80000"
               value={budget}
               onChange={(event) => setBudget(event.target.value)}
               required
             />
           </div>
 
+          {/* Trip Type */}
           <div className="form-group">
             <label>Who are you travelling with?</label>
-
             <div className="trip-type-options">
               {["Solo", "Couple", "Family", "Friends"].map((type) => (
                 <button
@@ -164,6 +262,7 @@ function PlanTrip() {
             </div>
           </div>
 
+          {/* Group Size */}
           {(tripType === "Family" || tripType === "Friends") && (
             <div className="form-group group-size-section">
               <label>
@@ -171,7 +270,6 @@ function PlanTrip() {
                   ? "How many family members?"
                   : "How many friends?"}
               </label>
-
               <input
                 type="number"
                 min="3"
@@ -182,13 +280,12 @@ function PlanTrip() {
             </div>
           )}
 
+          {/* Interests */}
           <div className="form-group">
             <label>What are you interested in?</label>
-
             <p className="interest-hint">
               Suggested based on {destination || "your destination"}
             </p>
-
             <div className="interest-options">
               {getSuggestedInterests().map((interest) => (
                 <button

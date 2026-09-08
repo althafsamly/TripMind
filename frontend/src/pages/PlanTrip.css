@@ -63,7 +63,9 @@
   font-weight: 600;
 }
 
-.form-group input {
+.form-group input[type="text"],
+.form-group input[type="number"],
+.form-group input[type="date"] {
   width: 100%;
   padding: 13px 14px;
 
@@ -94,6 +96,100 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 18px;
+}
+
+/* Voice Input Wrapper & Button */
+.input-voice-wrapper {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.input-voice-wrapper input {
+  flex: 1;
+}
+
+.voice-button {
+  padding: 13px 18px;
+  border: 1px solid rgba(210, 213, 225, 0.9);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.88);
+  color: #4f4f59;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.voice-button:hover {
+  border-color: #4f46e5;
+  color: #4f46e5;
+  transform: translateY(-1px);
+}
+
+.voice-button.listening {
+  background: #ef4444;
+  border-color: #ef4444;
+  color: white;
+  animation: pulse 1.2s infinite alternate;
+}
+
+/* Vehicle Selection Grid */
+.vehicle-options {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.vehicle-card {
+  padding: 12px;
+  border: 1px solid rgba(210, 213, 225, 0.9);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.88);
+  color: #4f4f59;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.vehicle-card:hover {
+  border-color: #4f46e5;
+  color: #4f46e5;
+  transform: translateY(-1px);
+}
+
+.vehicle-card.active {
+  background: #4f46e5;
+  border-color: #4f46e5;
+  color: white;
+}
+
+/* Checkbox Style for Map Toggle */
+.checkbox-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+}
+
+.checkbox-group input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #4f46e5;
+  cursor: pointer;
+}
+
+.checkbox-label {
+  margin-bottom: 0 !important;
+  cursor: pointer;
+  font-size: 14px;
+  color: #292933;
 }
 
 .trip-type-options {
@@ -228,6 +324,15 @@
   box-shadow: 0 10px 24px rgba(79, 70, 229, 0.3);
 }
 
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+  }
+  100% {
+    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+  }
+}
+
 @media (max-width: 700px) {
   .plan-trip-page {
     padding: 30px 16px;
@@ -251,7 +356,50 @@
     gap: 0;
   }
 
-  .trip-type-options {
+  .trip-type-options,
+  .vehicle-options {
     grid-template-columns: 1fr 1fr;
   }
+}
+
+/* Voice AI Banner Styling */
+.voice-ai-banner {
+  margin-bottom: 24px;
+  padding: 16px;
+  background: rgba(79, 70, 229, 0.08);
+  border: 1px dashed #4f46e5;
+  border-radius: 14px;
+  text-align: center;
+}
+
+.global-voice-button {
+  width: 100%;
+  padding: 14px 20px;
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  color: white;
+  border: none;
+  border-radius: 11px;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.25);
+}
+
+.global-voice-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(79, 70, 229, 0.35);
+}
+
+.global-voice-button.listening {
+  background: linear-gradient(135deg, #ef4444, #f87171);
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3);
+  animation: pulse 1.2s infinite alternate;
+}
+
+.voice-transcript {
+  margin-top: 10px;
+  font-size: 13px;
+  color: #4f46e5;
+  font-style: italic;
 }

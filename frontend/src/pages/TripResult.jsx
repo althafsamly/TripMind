@@ -1,6 +1,56 @@
 import { useLocation, Link } from "react-router-dom";
 import "./TripResult.css";
 
+// Dynamic database for destination-specific Map, Food, and Vehicle data
+const locationData = {
+  mirissa: {
+    coords: { lat: 5.9482, lng: 80.4716 },
+    foodSpots: [
+      { name: "Dewmini Roti Shop", type: "Roti & Kottu", specialty: "Famous cheese & avocado rotis" },
+      { name: "Mirissa Catch Seafood", type: "Seafood Grill", specialty: "Fresh beachfront daily catch" },
+      { name: "Mama's Dinner", type: "Rice & Curry", specialty: "Authentic local dinner buffet" },
+    ],
+    vehicles: [
+      { type: "Scooter / Bike", rate: "Rs. 3,500/day", icon: "🛵", badge: "Best for Mirissa" },
+      { type: "Self-Drive Tuk-Tuk", rate: "Rs. 6,000/day", icon: "🛺", badge: "Popular Choice" },
+    ]
+  },
+  ella: {
+    coords: { lat: 6.8667, lng: 81.0466 },
+    foodSpots: [
+      { name: "Matey Hut", type: "Local Eatery", specialty: "Traditional claypot rice & curry" },
+      { name: "Downtown Roti Hut", type: "Street Food", specialty: "Kottu & hot snacks" },
+      { name: "Chill Cafe", type: "Fusion & Local", specialty: "Lankan curries & scenic mountain view" },
+    ],
+    vehicles: [
+      { type: "Scooter / Bike", rate: "Rs. 3,500/day", icon: "🛵", badge: "Best for Hills" },
+      { type: "Private Car / Driver", rate: "Rs. 14,000/day", icon: "🚗", badge: "Long Distance" },
+    ]
+  },
+  kandy: {
+    coords: { lat: 7.2906, lng: 80.6337 },
+    foodSpots: [
+      { name: "Muslim Hotel", type: "Street Food Legend", specialty: "Authentic beef kottu & samosas" },
+      { name: "Slightly Chilled Lounge", type: "Lankan & Views", specialty: "Curry with Kandy lake panorama" },
+    ],
+    vehicles: [
+      { type: "Private Taxi / Car", rate: "Rs. 12,000/day", icon: "🚗", badge: "Comfortable" },
+      { type: "Tuk-Tuk Rental", rate: "Rs. 5,000/day", icon: "🛺", badge: "Local Commute" },
+    ]
+  },
+  galle: {
+    coords: { lat: 6.0535, lng: 80.2210 },
+    foodSpots: [
+      { name: "Lucky Fort Restaurant", type: "Rice & Curry", specialty: "10-curry traditional set" },
+      { name: "Poonie's Kitchen", type: "Healthy Local", specialty: "Organic salad bowls & fresh juices" },
+    ],
+    vehicles: [
+      { type: "Scooter / Bike", rate: "Rs. 3,500/day", icon: "🛵", badge: "Fort Friendly" },
+      { type: "Tuk-Tuk Rental", rate: "Rs. 5,500/day", icon: "🛺", badge: "Coastal Drives" },
+    ]
+  }
+};
+
 function TripResult() {
   const location = useLocation();
   const trip = location.state;
@@ -13,6 +63,20 @@ function TripResult() {
       </div>
     );
   }
+
+  // Fallback location lookup (defaults to Colombo coordinates if target destination isn't listed)
+  const destKey = trip.destination ? trip.destination.toLowerCase().trim() : "";
+  const currentDestData = locationData[destKey] || {
+    coords: { lat: 6.9271, lng: 79.8612 },
+    foodSpots: [
+      { name: "Local Village Eatery", type: "Rice & Curry", specialty: "Authentic Sri Lankan buffet" },
+      { name: "Night Market Kottu", type: "Street Food", specialty: "Freshly made hot kottu" },
+    ],
+    vehicles: [
+      { type: "Scooter / Bike", rate: "Rs. 3,500/day", icon: "🛵", badge: "Easy Travel" },
+      { type: "Self-Drive Tuk-Tuk", rate: "Rs. 6,000/day", icon: "🛺", badge: "Authentic" },
+    ]
+  };
 
   const itinerary = [
     {
@@ -39,7 +103,6 @@ function TripResult() {
   ];
 
   const estimatedBudget = Number(trip.budget);
-
   const hotelBudget = Math.round(estimatedBudget * 0.4);
   const foodBudget = Math.round(estimatedBudget * 0.25);
   const transportBudget = Math.round(estimatedBudget * 0.2);
@@ -87,7 +150,26 @@ function TripResult() {
         <div className="result-layout">
 
           <main className="itinerary-section">
-            <div className="section-title">
+            
+            {/* Interactive Location Map */}
+            <div className="result-card map-card">
+              <div className="section-title">
+                <p>EXPLORE LOCATION</p>
+                <h2>Destination Map</h2>
+              </div>
+              <div className="map-wrapper">
+                <iframe
+                  title="Destination Map"
+                  width="100%"
+                  height="280"
+                  style={{ border: 0, borderRadius: "14px" }}
+                  loading="lazy"
+                  src={`https://maps.google.com/maps?q=${currentDestData.coords.lat},${currentDestData.coords.lng}&z=13&output=embed`}
+                />
+              </div>
+            </div>
+
+            <div className="section-title" style={{ marginTop: "30px" }}>
               <p>PERSONALIZED FOR YOU</p>
               <h2>Your Itinerary</h2>
             </div>
@@ -127,15 +209,54 @@ function TripResult() {
                 </div>
               </div>
             ))}
+
+            {/* Authentic Local Food Section */}
+            <div className="result-card food-card" style={{ marginTop: "30px" }}>
+              <div className="section-title">
+                <p>LOCAL FLAVORS</p>
+                <h2>Authentic Food Recommendations</h2>
+              </div>
+              <div className="food-list">
+                {currentDestData.foodSpots.map((food, index) => (
+                  <div key={index} className="food-spot-item">
+                    <div className="food-icon">🍛</div>
+                    <div className="food-info">
+                      <strong>{food.name} <span className="food-type-tag">{food.type}</span></strong>
+                      <p>{food.specialty}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
           </main>
 
           <aside className="result-sidebar">
+
+            {/* Vehicle & Scooter Rentals Section */}
+            <div className="result-card">
+              <h3>Vehicle & Scooter Rentals</h3>
+              <p className="rental-subtitle">Recommended options in {trip.destination}:</p>
+              
+              <div className="vehicle-rentals-list">
+                {currentDestData.vehicles.map((v, index) => (
+                  <div key={index} className="rental-item">
+                    <span className="rental-icon">{v.icon}</span>
+                    <div className="rental-details">
+                      <strong>{v.type}</strong>
+                      <p>{v.rate}</p>
+                    </div>
+                    <span className="rental-badge">{v.badge}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
 
             <div className="result-card">
               <h3>Your Interests</h3>
 
               <div className="selected-interests">
-                {trip.interests.length > 0 ? (
+                {trip.interests && trip.interests.length > 0 ? (
                   trip.interests.map((interest) => (
                     <span key={interest}>
                       {interest}
