@@ -1,0 +1,469 @@
+// Primary Hotel Service Adapter
+// Connects to Amadeus API first with seamless fallback to curated catalog
+
+const amadeusService = require("./amadeusService");
+const geminiHotelService = require("./geminiHotelService");
+const hotelImageService = require("./hotelImageService");
+
+// Curated Sri Lankan Hotels Catalog (Fallback provider)
+const curatedHotelsCatalog = {
+  ella: [
+    {
+      id: "ella-98acres",
+      name: "98 Acres Resort & Spa",
+      tier: "Luxury",
+      pricePerNight: 48000,
+      rating: 4.9,
+      reviews: 420,
+      amenities: ["Infinity Pool", "Tea Valley View", "Ayurvedic Spa", "Free Breakfast"],
+      badge: "Top Luxury",
+      icon: "🏰",
+      description: "Breathtaking chalets built on scenic tea terraces facing Ella Rock and Little Adam's Peak.",
+      source: "catalog",
+    },
+    {
+      id: "ella-mountain-heavens",
+      name: "Mountain Heavens Ella",
+      tier: "Comfort",
+      pricePerNight: 16000,
+      rating: 4.6,
+      reviews: 280,
+      amenities: ["Valley View Balcony", "Swimming Pool", "Restaurant", "Free WiFi"],
+      badge: "Best Value",
+      icon: "🌄",
+      description: "Panoramic views of the Ella Gap with cozy rooms and an open-air mountain restaurant.",
+      source: "catalog",
+    },
+    {
+      id: "ella-flower-garden",
+      name: "Ella Flower Garden Resort",
+      tier: "Comfort",
+      pricePerNight: 12000,
+      rating: 4.5,
+      reviews: 190,
+      amenities: ["Garden Setting", "Mountain View", "Breakfast Included", "Tour Desk"],
+      badge: "Popular Choice",
+      icon: "🌺",
+      description: "Serene garden resort surrounded by blooming orchids and vibrant mountain flora.",
+      source: "catalog",
+    },
+    {
+      id: "ella-tunnel-gap",
+      name: "Tunnel Gap Homestay",
+      tier: "Budget",
+      pricePerNight: 5500,
+      rating: 4.7,
+      reviews: 150,
+      amenities: ["Homemade Breakfast", "Mountain Breeze", "Host Guided Walks", "Free WiFi"],
+      badge: "Budget Friendly",
+      icon: "🏡",
+      description: "Warm local hospitality with authentic home-cooked Sri Lankan breakfast and great views.",
+      source: "catalog",
+    },
+  ],
+  mirissa: [
+    {
+      id: "mirissa-sharavi",
+      name: "Sri Sharavi Beach Villas & Spa",
+      tier: "Luxury",
+      pricePerNight: 52000,
+      rating: 4.8,
+      reviews: 310,
+      amenities: ["Beachfront Access", "Eco Wine Bar", "Spa Pavilion", "Gourmet Breakfast"],
+      badge: "Top Luxury",
+      icon: "🏖️",
+      description: "Private contemporary oceanfront villas with direct access to pristine golden sand.",
+      source: "catalog",
+    },
+    {
+      id: "mirissa-triple-o-six",
+      name: "Triple O Six Boutique Hotel",
+      tier: "Comfort",
+      pricePerNight: 18000,
+      rating: 4.7,
+      reviews: 240,
+      amenities: ["Designer Pool", "Cocktail Lounge", "Steps to Beach", "High-speed WiFi"],
+      badge: "Best Value",
+      icon: "🍹",
+      description: "Chic modern retreat with minimalist tropical design just 2 minutes from Mirissa Beach.",
+      source: "catalog",
+    },
+    {
+      id: "mirissa-paradise-beach",
+      name: "Paradise Beach Club",
+      tier: "Comfort",
+      pricePerNight: 14000,
+      rating: 4.4,
+      reviews: 380,
+      amenities: ["Beachfront Pool", "Seafood Grill", "Sun Loungers", "Breakfast Included"],
+      badge: "Popular Choice",
+      icon: "🌊",
+      description: "Lively beachfront hotel with palm-shaded sun loungers and ocean-view dining.",
+      source: "catalog",
+    },
+    {
+      id: "mirissa-hangover",
+      name: "Hangover Hostels Mirissa",
+      tier: "Budget",
+      pricePerNight: 5000,
+      rating: 4.6,
+      reviews: 410,
+      amenities: ["Air Conditioning", "Social Rooftop", "Surf Board Storage", "Free WiFi"],
+      badge: "Budget Friendly",
+      icon: "🏄",
+      description: "Vibrant and spotless hostel located right opposite the prime surf break.",
+      source: "catalog",
+    },
+  ],
+  galle: [
+    {
+      id: "galle-amangalla",
+      name: "Amangalla Historic Heritage Hotel",
+      tier: "Luxury",
+      pricePerNight: 75000,
+      rating: 4.9,
+      reviews: 210,
+      amenities: ["Heritage Architecture", "Hydrotherapy Pools", "Colonial Dining", "Butler Service"],
+      badge: "Historic Luxury",
+      icon: "🏛️",
+      description: "World-renowned luxury icon dating back to 1684 within the ramparts of the UNESCO World Heritage fort.",
+      source: "catalog",
+    },
+    {
+      id: "galle-fort-printers",
+      name: "The Fort Printers",
+      tier: "Comfort",
+      pricePerNight: 22000,
+      rating: 4.7,
+      reviews: 175,
+      amenities: ["Boutique Courtyard", "Gourmet Seafood", "Art Deco Rooms", "Free Breakfast"],
+      badge: "Boutique Pick",
+      icon: "🖼️",
+      description: "18th-century mansion transformed into an elegant boutique hotel celebrating heritage arts.",
+      source: "catalog",
+    },
+    {
+      id: "galle-tamarind-hill",
+      name: "Tamarind Hill by Asia Leisure",
+      tier: "Comfort",
+      pricePerNight: 16000,
+      rating: 4.5,
+      reviews: 160,
+      amenities: ["Riverfront Setting", "Lush Courtyard", "Swimming Pool", "Spa Treatments"],
+      badge: "Best Value",
+      icon: "🌿",
+      description: "Tranquil colonial manor perched beside the Gintota River just minutes from the central fort.",
+      source: "catalog",
+    },
+    {
+      id: "galle-pedlars-inn",
+      name: "Pedlar's Inn Hostel & Suites",
+      tier: "Budget",
+      pricePerNight: 6000,
+      rating: 4.6,
+      reviews: 290,
+      amenities: ["Inside Fort", "Cafe Attached", "Air Conditioning", "Free High-Speed WiFi"],
+      badge: "Budget Friendly",
+      icon: "☕",
+      description: "Charming rooms and dorms nestled inside the Dutch Fort next to artisan cafes and gelato bars.",
+      source: "catalog",
+    },
+  ],
+  kandy: [
+    {
+      id: "kandy-earls-regency",
+      name: "Earl's Regency Hotel",
+      tier: "Luxury",
+      pricePerNight: 38000,
+      rating: 4.8,
+      reviews: 490,
+      amenities: ["Mahaweli River View", "Tennis Court", "Spa Sanctuary", "Multiple Restaurants"],
+      badge: "5-Star Luxury",
+      icon: "⭐",
+      description: "Luxury hillside resort nestled along the Mahaweli River offering 5-star mountain indulgence.",
+      source: "catalog",
+    },
+    {
+      id: "kandy-radh",
+      name: "The Radh Hotel",
+      tier: "Comfort",
+      pricePerNight: 18000,
+      rating: 4.7,
+      reviews: 210,
+      amenities: ["Walking to Temple", "Modern Suites", "Spa & Gym", "Free Gourmet Breakfast"],
+      badge: "Prime Location",
+      icon: "🏛️",
+      description: "Boutique hotel with royal Kandyan craftsmanship situated just a short stroll from the Temple of the Tooth.",
+      source: "catalog",
+    },
+    {
+      id: "kandy-suisse",
+      name: "Hotel Suisse",
+      tier: "Comfort",
+      pricePerNight: 14000,
+      rating: 4.4,
+      reviews: 320,
+      amenities: ["Kandy Lake View", "Colonial Manor", "Large Pool", "Ayurveda Spa"],
+      badge: "Colonial Classic",
+      icon: "🌺",
+      description: "A historic 17th-century governor's mansion situated directly opposite Kandy Lake surrounded by trees.",
+      source: "catalog",
+    },
+    {
+      id: "kandy-city-stay",
+      name: "Kandy City Stay",
+      tier: "Budget",
+      pricePerNight: 5500,
+      rating: 4.5,
+      reviews: 180,
+      amenities: ["City Center", "Air Conditioning", "Rooftop Terrace", "Free WiFi"],
+      badge: "Budget Friendly",
+      icon: "🛏️",
+      description: "Spotlessly clean modern rooms in the center of Kandy within easy reach of the railway station.",
+      source: "catalog",
+    },
+  ],
+  sigiriya: [
+    {
+      id: "sigiriya-kandalama",
+      name: "Heritance Kandalama",
+      tier: "Luxury",
+      pricePerNight: 55000,
+      rating: 4.9,
+      reviews: 650,
+      amenities: ["Geoffrey Bawa Architecture", "Cliffside Pool", "Lake View", "Eco Luxury"],
+      badge: "Architectural Wonder",
+      icon: "🏞️",
+      description: "An architectural masterpiece built into a cliff edge overlooking the Kandalama Lake and Sigiriya Rock.",
+      source: "catalog",
+    },
+    {
+      id: "sigiriya-aliya",
+      name: "Aliya Resort & Spa",
+      tier: "Comfort",
+      pricePerNight: 24000,
+      rating: 4.7,
+      reviews: 340,
+      amenities: ["Direct Sigiriya Rock View", "Infinity Pool", "Ayurvedic Village", "Buffet Feast"],
+      badge: "Best Views",
+      icon: "🐘",
+      description: "Themed around the majestic Asian elephant, featuring an infinity pool framing direct views of the rock.",
+      source: "catalog",
+    },
+    {
+      id: "sigiriya-village",
+      name: "Sigiriya Village Hotel",
+      tier: "Comfort",
+      pricePerNight: 14000,
+      rating: 4.4,
+      reviews: 230,
+      amenities: ["Chalet Lodges", "Tropical Gardens", "Bird Watching", "Swimming Pool"],
+      badge: "Rustic Comfort",
+      icon: "🏡",
+      description: "Spacious individual chalets tucked inside tranquil native jungle foliage beneath the lion rock.",
+      source: "catalog",
+    },
+    {
+      id: "sigiriya-rock-stay",
+      name: "Pidurangala Rock Homestay",
+      tier: "Budget",
+      pricePerNight: 5000,
+      rating: 4.6,
+      reviews: 190,
+      amenities: ["Base of Rock", "Farm-fresh Meals", "Bicycle Rental", "Free WiFi"],
+      badge: "Budget Friendly",
+      icon: "🥾",
+      description: "Quaint rustic lodge steps away from the Pidurangala trail with delicious home-cooked curry and rice.",
+      source: "catalog",
+    },
+  ],
+  colombo: [
+    {
+      id: "colombo-galle-face",
+      name: "Galle Face Hotel",
+      tier: "Luxury",
+      pricePerNight: 42000,
+      rating: 4.8,
+      reviews: 580,
+      amenities: ["Seaside Saltwater Pool", "Historic Museum", "Ocean Sunset Terrace", "Fine Dining"],
+      badge: "Heritage Luxury",
+      icon: "🌅",
+      description: "Legendary 1864 grand hotel facing the Indian Ocean where royals and dignitaries have stayed for 160 years.",
+      source: "catalog",
+    },
+    {
+      id: "colombo-cinnamon-red",
+      name: "Cinnamon Red Colombo",
+      tier: "Comfort",
+      pricePerNight: 16000,
+      rating: 4.6,
+      reviews: 440,
+      amenities: ["Rooftop Infinity Pool", "Sky Lounge", "City Skyline Views", "Modern Gym"],
+      badge: "Best Value",
+      icon: "🍸",
+      description: "Lean luxury hotel boasting Colombo's highest rooftop infinity pool overlooking the sparkling skyline.",
+      source: "catalog",
+    },
+    {
+      id: "colombo-clock-inn",
+      name: "Clock Inn Colombo",
+      tier: "Budget",
+      pricePerNight: 5000,
+      rating: 4.5,
+      reviews: 320,
+      amenities: ["Clean Pods & Rooms", "Galle Road Location", "Guest Pantry", "Free WiFi"],
+      badge: "Budget Friendly",
+      icon: "🛏️",
+      description: "Modern, hip boutique hostel on Galle Road close to cafes, beaches, and rail transit.",
+      source: "catalog",
+    },
+  ],
+};
+
+// Fallback catalog lookup helper
+function getFallbackHotels(destination) {
+  const destKey = (destination || "").trim().toLowerCase();
+  const found = Object.keys(curatedHotelsCatalog).find((k) => destKey.includes(k) || k.includes(destKey));
+
+  let list = [];
+  if (found) {
+    list = curatedHotelsCatalog[found];
+  } else {
+    const capitalized = destination ? destination.charAt(0).toUpperCase() + destination.slice(1) : "Sri Lanka";
+    list = [
+      {
+        id: `${destKey}-luxury`,
+        name: `${capitalized} Grand Heritage Resort`,
+        tier: "Luxury",
+        pricePerNight: 35000,
+        rating: 4.8,
+        reviews: 210,
+        amenities: ["Panoramic Pool", "Spa & Wellness", "Gourmet Dining", "Free Breakfast"],
+        badge: "Luxury Pick",
+        icon: "⭐",
+        description: `Premier luxury accommodation in ${capitalized} offering peaceful natural surroundings.`,
+        source: "catalog",
+      },
+      {
+        id: `${destKey}-comfort`,
+        name: `${capitalized} Boutique Haven`,
+        tier: "Comfort",
+        pricePerNight: 15000,
+        rating: 4.6,
+        reviews: 180,
+        amenities: ["Scenic Balcony", "On-site Restaurant", "Tour Desk", "Free WiFi"],
+        badge: "Best Value",
+        icon: "🏡",
+        description: `Comfortable and stylish boutique hotel ideally located for exploring ${capitalized}.`,
+        source: "catalog",
+      },
+      {
+        id: `${destKey}-budget`,
+        name: `${capitalized} Travelers Lodge`,
+        tier: "Budget",
+        pricePerNight: 5500,
+        rating: 4.5,
+        reviews: 140,
+        amenities: ["Clean Rooms", "Homecooked Breakfast", "Warm Hosts", "Free WiFi"],
+        badge: "Budget Friendly",
+        icon: "🛏️",
+        description: `Friendly, welcoming and budget-conscious lodge providing local insights and comforts.`,
+        source: "catalog",
+      },
+    ];
+  }
+
+  return list.map((h) => ({
+    ...h,
+    image: h.image || hotelImageService.getHotelPhoto(h.name, destination, h.tier),
+    images: h.images || hotelImageService.getHotelGallery(h.name, destination, h.tier),
+  }));
+}
+
+// Master Hotel Provider Method
+async function getHotels({ destination, budget, startDate, endDate, travelers, exclude }) {
+  // 1. Check Gemini AI Provider first
+  if (process.env.GEMINI_API_KEY) {
+    try {
+      console.log(`[HotelService] Querying Gemini AI for hotel recommendations in: ${destination}`);
+      
+      let nights = 3;
+      if (startDate && endDate) {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        nights = Math.max(1, Math.ceil((end - start) / (1000 * 60 * 60 * 24)));
+      }
+
+      const geminiHotels = await geminiHotelService.fetchHotelsWithGemini({
+        destination,
+        budget: budget || 75000,
+        nights,
+        travelers: travelers || 1,
+        exclude,
+      });
+
+      if (geminiHotels && geminiHotels.length > 0) {
+        console.log(`[HotelService] Successfully generated ${geminiHotels.length} live hotels via Gemini AI`);
+        return {
+          provider: "gemini",
+          hotels: geminiHotels,
+        };
+      }
+    } catch (err) {
+      console.warn(`[HotelService] Gemini AI fetch failed (${err.message}). Checking next provider.`);
+    }
+  }
+
+  // 2. Check Amadeus Provider
+  const hasAmadeusCredentials = !!(process.env.AMADEUS_CLIENT_ID && process.env.AMADEUS_CLIENT_SECRET);
+  if (hasAmadeusCredentials) {
+    try {
+      console.log(`[HotelService] Querying Amadeus API for: ${destination}`);
+      const amadeusHotels = await amadeusService.fetchHotelsFromAmadeus({
+        destination,
+        startDate,
+        endDate,
+        travelers,
+      });
+
+      if (amadeusHotels && amadeusHotels.length > 0) {
+        console.log(`[HotelService] Successfully loaded ${amadeusHotels.length} live hotels from Amadeus`);
+        const enriched = await hotelImageService.enrichHotelsWithPhotos(amadeusHotels, destination);
+        return {
+          provider: "amadeus",
+          hotels: enriched,
+        };
+      }
+      console.log("[HotelService] Amadeus returned 0 hotels for destination, using curated catalog.");
+    } catch (err) {
+      console.warn(`[HotelService] Amadeus fetch failed (${err.message}). Falling back to curated catalog.`);
+    }
+  }
+
+  // 3. Fallback to Curated Catalog
+  console.log("[HotelService] Using curated Sri Lanka hotel catalog.");
+  let fallbackHotels = getFallbackHotels(destination);
+  if (exclude) {
+    const excludeList = (Array.isArray(exclude) ? exclude : exclude.split(","))
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean);
+    if (excludeList.length > 0) {
+      const filtered = fallbackHotels.filter(
+        (h) => !excludeList.includes(h.name.toLowerCase())
+      );
+      if (filtered.length > 0) {
+        fallbackHotels = filtered;
+      }
+    }
+  }
+
+  const enrichedFallback = await hotelImageService.enrichHotelsWithPhotos(fallbackHotels, destination);
+  return {
+    provider: "catalog",
+    hotels: enrichedFallback,
+  };
+}
+
+module.exports = {
+  getHotels,
+};
