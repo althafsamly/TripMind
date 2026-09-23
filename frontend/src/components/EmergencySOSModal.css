@@ -1,0 +1,705 @@
+/* Emergency SOS Dark-Themed Modal matching user's reference design */
+
+.sos-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: sos-fade-in 0.25s ease-out;
+}
+
+@keyframes sos-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.sos-modal-dialog {
+  background: #10141d;
+  border: 1px solid #1e293b;
+  border-radius: 24px;
+  width: 100%;
+  max-width: 440px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  color: #f8fafc;
+  overflow: hidden;
+  animation: sos-slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+
+@keyframes sos-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Header */
+.sos-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 22px 14px;
+}
+
+.sos-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sos-siren-icon {
+  font-size: 20px;
+  animation: sos-siren-blink 1.5s infinite;
+}
+
+@keyframes sos-siren-blink {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 4px #ef4444);
+  }
+  50% {
+    transform: scale(1.15);
+    filter: drop-shadow(0 0 12px #ef4444);
+  }
+}
+
+.sos-title-group h2 {
+  font-size: 19px;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0;
+  letter-spacing: -0.2px;
+}
+
+.sos-close-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #1e293b;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sos-close-btn:hover {
+  background: #334155;
+  color: #ffffff;
+}
+
+/* Scrollable Body */
+.sos-modal-body {
+  padding: 0 20px 24px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #334155 transparent;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sos-modal-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sos-modal-body::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 10px;
+}
+
+/* Stack Action Row Cards */
+.sos-row-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #171d29;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  padding: 13px 16px;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.sos-row-card:hover {
+  background: #1e2637;
+  border-color: rgba(255, 255, 255, 0.12);
+  transform: translateY(-1px);
+}
+
+/* Icon circles */
+.sos-row-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.sos-row-icon.blue {
+  background: #1e3a8a;
+  color: #60a5fa;
+}
+
+.sos-row-icon.red {
+  background: #7f1d1d;
+  color: #f87171;
+}
+
+.sos-row-icon.indigo {
+  background: #312e81;
+  color: #818cf8;
+}
+
+.sos-row-icon.pink {
+  background: #831843;
+  color: #f472b6;
+}
+
+.sos-row-icon.yellow {
+  background: #78350f;
+  color: #fcd34d;
+}
+
+.sos-row-content {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  min-width: 0;
+}
+
+.sos-row-sub {
+  font-size: 11px;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sos-row-main {
+  font-size: 14px;
+  font-weight: 750;
+  color: #ffffff;
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sos-row-arrow {
+  color: #64748b;
+  font-size: 13px;
+  transition: transform 0.2s ease;
+}
+
+.sos-row-card:hover .sos-row-arrow {
+  color: #ffffff;
+  transform: translateX(3px);
+}
+
+.sos-row-arrow-btn {
+  background: none;
+  border: none;
+  color: #64748b;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.sos-row-arrow-btn:hover {
+  color: #60a5fa;
+}
+
+/* Active Nearest Hospital Card (Highlighted with Cyan Glow) */
+.nearest-hospital-active-card {
+  border: 1.5px solid #06b6d4;
+  background: #142232;
+  box-shadow: 0 0 16px rgba(6, 182, 212, 0.15);
+}
+
+.sos-toggle-collapse-btn {
+  background: #0e7490;
+  border: none;
+  color: #e0f2fe;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sos-toggle-collapse-btn:hover {
+  background: #06b6d4;
+  color: #ffffff;
+}
+
+/* Dashed Divider */
+.sos-dashed-divider {
+  border-top: 1px dashed #2d3748;
+  margin: 6px 0;
+}
+
+/* Tabs bar */
+.sos-tabs-bar {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.sos-tab-pill {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 7px 10px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #94a3b8;
+  background: #171d29;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.sos-tab-pill:hover {
+  background: #1e2637;
+  color: #ffffff;
+}
+
+.sos-tab-pill.active {
+  background: #2563eb;
+  color: #ffffff;
+  border-color: #2563eb;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
+}
+
+/* Tab Content */
+.sos-tab-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+/* Auto-detect Big Button */
+.sos-gps-large-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 750;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+}
+
+.sos-gps-large-btn:hover:not(:disabled) {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+.sos-gps-large-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.gps-rocket-icon {
+  font-size: 16px;
+}
+
+/* Search Google Maps Row */
+.sos-search-row {
+  display: flex;
+  gap: 8px;
+}
+
+.sos-search-input {
+  flex-grow: 1;
+  background: #0c1017;
+  border: 1px solid #1e293b;
+  border-radius: 10px;
+  padding: 9px 12px;
+  color: #f8fafc;
+  font-size: 11.5px;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.sos-search-input:focus {
+  border-color: #2563eb;
+}
+
+.sos-search-input::placeholder {
+  color: #64748b;
+}
+
+.sos-search-submit-btn {
+  background: #1e293b;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #f8fafc;
+  padding: 9px 12px;
+  border-radius: 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s ease;
+}
+
+.sos-search-submit-btn:hover {
+  background: #334155;
+}
+
+/* Hospital Detail Cards */
+.sos-hospitals-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sos-hospital-detail-card {
+  background: #151b27;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sos-hosp-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.sos-plus-icon {
+  color: #a855f7;
+  font-weight: 900;
+  font-size: 16px;
+  line-height: 1.1;
+}
+
+.sos-hosp-title {
+  font-size: 13.5px;
+  font-weight: 750;
+  color: #ffffff;
+  margin: 0;
+  line-height: 1.3;
+}
+
+.sos-hosp-meta {
+  font-size: 11px;
+  color: #94a3b8;
+  margin: 0;
+}
+
+.sos-dist-cyan {
+  color: #38bdf8;
+  font-weight: 700;
+}
+
+.sos-hosp-badge-row {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.sos-trauma-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #34d399;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.sos-hosp-btn-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.sos-hosp-call-btn {
+  background: #dc2626;
+  color: #ffffff;
+  text-decoration: none;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 8px 10px;
+  border-radius: 8px;
+  text-align: center;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sos-hosp-call-btn:hover {
+  background: #ef4444;
+}
+
+.sos-hosp-nav-btn {
+  background: #1d4ed8;
+  color: #ffffff;
+  text-decoration: none;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 8px 10px;
+  border-radius: 8px;
+  text-align: center;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.sos-hosp-nav-btn:hover {
+  background: #2563eb;
+}
+
+/* Hotlines & Police Views */
+.sos-hotline-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #151b27;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.hotline-icon-num {
+  font-size: 16px;
+  font-weight: 900;
+  padding: 8px 10px;
+  border-radius: 8px;
+  min-width: 50px;
+  text-align: center;
+  color: #ffffff;
+}
+
+.hotline-icon-num.red {
+  background: #991b1b;
+}
+
+.hotline-icon-num.blue {
+  background: #1e3a8a;
+}
+
+.hotline-icon-num.orange {
+  background: #9a3412;
+}
+
+.hotline-icon-num.teal {
+  background: #115e59;
+}
+
+.hotline-details {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.hotline-details strong {
+  font-size: 13px;
+  color: #ffffff;
+}
+
+.hotline-details span {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.hotline-call-btn {
+  padding: 7px 12px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #ffffff;
+  text-decoration: none;
+}
+
+.hotline-call-btn.red {
+  background: #dc2626;
+}
+
+.hotline-call-btn.blue {
+  background: #2563eb;
+}
+
+.hotline-call-btn.orange {
+  background: #ea580c;
+}
+
+.hotline-call-btn.teal {
+  background: #0d9488;
+}
+
+.sos-police-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #142232;
+  border: 1px solid #0284c7;
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.police-shield-big {
+  font-size: 26px;
+}
+
+.sos-police-banner h4 {
+  font-size: 13.5px;
+  color: #ffffff;
+  margin: 0;
+}
+
+.sos-police-banner p {
+  font-size: 11px;
+  color: #94a3b8;
+  margin: 2px 0 0;
+}
+
+.police-dial-now-btn {
+  background: #0284c7;
+  color: #ffffff;
+  text-decoration: none;
+  font-size: 11px;
+  font-weight: 750;
+  padding: 8px 12px;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
+.police-branch-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.police-branch-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #151b27;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+
+.police-branch-row strong {
+  font-size: 12px;
+  color: #f8fafc;
+  display: block;
+}
+
+.police-branch-row small {
+  font-size: 10.5px;
+  color: #94a3b8;
+}
+
+.branch-phone-link {
+  color: #38bdf8;
+  text-decoration: none;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: rgba(56, 189, 248, 0.1);
+}
+
+/* Floating SOS Trigger Button */
+.floating-sos-trigger {
+  position: fixed;
+  bottom: 26px;
+  right: 26px;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: linear-gradient(135deg, #10141d 0%, #1e1b4b 60%, #b91c1c 100%);
+  color: #ffffff;
+  border: 1.5px solid #ef4444;
+  border-radius: 50px;
+  padding: 12px 20px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  cursor: pointer;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(239, 68, 68, 0.35);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.floating-sos-trigger:hover {
+  transform: translateY(-3px) scale(1.04);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(239, 68, 68, 0.5);
+  border-color: #f87171;
+}
+
+.floating-sos-pulse {
+  width: 10px;
+  height: 10px;
+  background-color: #ef4444;
+  border-radius: 50%;
+  animation: floating-pulse 1.6s infinite;
+}
+
+@keyframes floating-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.8);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+.floating-sos-icon {
+  font-size: 18px;
+}
