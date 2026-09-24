@@ -146,10 +146,18 @@ function isConfidentMatch(entityName, resultTitle, resultContext = "", destinati
   if (matched.length === 0) return false;
 
   // 2. Must be geographically linked to Sri Lanka or destination
+  // Since this app is Sri Lanka only, accept any Sri Lankan city or region name
   const destLower = (destination || "").toLowerCase();
+  const SL_CITIES = [
+    "sri lanka", "ceylon", "colombo", "kandy", "galle", "ella", "mirissa",
+    "sigiriya", "dambulla", "anuradhapura", "polonnaruwa", "nuwara eliya",
+    "trincomalee", "jaffna", "batticaloa", "negombo", "matara", "bentota",
+    "weligama", "arugam bay", "yala", "haputale", "bandarawela", "hikkaduwa",
+    "tangalle", "unawatuna", "hambantota", "tissamaharama", "ratnapura",
+    "badulla", "mannar", "vavuniya", "ampara", "nuwara", "puttalam", "kurunegala",
+  ];
   const isSriLankan =
-    text.includes("sri lanka") ||
-    text.includes("ceylon") ||
+    SL_CITIES.some((city) => text.includes(city)) ||
     (destLower && text.includes(destLower));
 
   return isSriLankan;
@@ -270,6 +278,7 @@ async function getPhotosForEntity(name = "", destination = "") {
   // Targeted search queries: always anchored to destination and Sri Lanka
   const queriesToTry = [
     destination ? `${name} ${destination} Sri Lanka` : `${name} Sri Lanka`,
+    destination ? `${name} ${destination}` : name,
     name,
   ];
 

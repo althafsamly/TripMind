@@ -16,47 +16,38 @@ async function fetchVehiclesWithGemini({ destination, tripType = "Solo", travele
     ? `CRITICAL EXCLUSION: Do NOT include any of the following rental shops: ${excludeList.join(", ")}.\n`
     : "";
 
-  const prompt = `You are an expert Sri Lankan transport advisor and local travel guide.
-Generate exactly 3 or 4 real, authentic, well-rated vehicle rental shops, scooter hire outlets, or transport hire services in or immediately around "${destination}", Sri Lanka.
+  const prompt = `You are a Sri Lanka transport expert with deep knowledge of real vehicle rental shops, tuk-tuk services, and local transport options across every city and region in Sri Lanka.
+Generate exactly 3 or 4 REAL, well-rated vehicle rental shops, tuk-tuk services, or local transport options that ACTUALLY EXIST in or immediately around "${destination}", Sri Lanka.
 
 ${excludeClause}Traveler Context:
 - Destination: ${destination}, Sri Lanka
 - Trip Style: ${tripType || "General"}
 - Travelers: ${travelers || 1}
 
-Core Vehicle Recommendation Rules:
-- For Mirissa, Ahangama, Weligama, Galle, or coastal/beach areas (especially Solo/Couple):
-  Highlight 🛵 Scooter rentals (Reason: "Coastal roads, easy beach hopping").
-- For Ella, Sigiriya, Dambulla, or adventure travelers:
-  Highlight 🛺 Self-Drive Tuk-Tuk rentals (Reason: "Fun rural exploration, scenic mountain drives").
-- For Kandy, Nuwara Eliya, Hatton, or family/group trips:
-  Highlight 🚗 Private Car with Driver (Reason: "Winding mountain roads, comfortable for group").
-- For Colombo:
-  Highlight 📱 PickMe / Uber App & city taxi/rental hubs (Reason: "High traffic, easy ride-hailing").
-
 Requirements:
-- Provide real rental businesses or authentic local transport providers in ${destination}.
-- Accurate rates in Sri Lankan Rupees (LKR) e.g., ~Rs. 3,500/day for scooters, ~Rs. 6,000/day for tuk-tuks, ~Rs. 14,000/day for private chauffeur cars, or "Metered / On Demand" for Colombo ride-hailing.
-- Genuine ratings (between 4.5 and 4.9) and review counts.
-- Realistic local street address or neighborhood in ${destination}.
-- 2-3 valuable features (e.g. "Helmets included", "Surf rack available", "Free hotel delivery", "Driving lesson included", "AC vehicle & English-speaking chauffeur").
+- Recommend transport options that are ACTUALLY AVAILABLE and commonly used in ${destination}, Sri Lanka.
+- Typical Sri Lanka transport options: Tuk-Tuk rental, scooter/motorbike rental, private car hire with driver, PickMe taxi, local bus.
+- Rates in Sri Lankan Rupees (LKR).
+- Genuine ratings (4.5–4.9) and realistic review counts.
+- Real local street address or area in ${destination}, Sri Lanka.
+- 2-3 relevant features.
 
-You MUST reply with ONLY a raw JSON array containing 3 or 4 objects. Do not include markdown codeblocks or other text.
+You MUST reply with ONLY a raw JSON array of 3 or 4 objects. No markdown, no explanation.
 
 JSON format:
 [
   {
     "id": "slug-string",
-    "shopName": "Exact Rental Shop Name in ${destination}",
-    "vehicleType": "Scooter" | "Self-Drive Tuk-Tuk" | "Private Car with Driver" | "PickMe / Uber App",
-    "icon": "🛵" | "🛺" | "🚗" | "📱",
-    "rate": "Rs. 3,500/day",
+    "shopName": "Exact Real Transport Service or Rental Shop Name in ${destination}",
+    "vehicleType": "Car Rental" | "Scooter / Motorbike" | "Tuk-Tuk" | "Private Chauffeur" | "Taxi / Rideshare",
+    "icon": "🚗" | "🛵" | "🚺" | "🚕",
+    "rate": "~LKR 3,500/day",
     "rating": 4.8,
     "reviews": 120,
     "badge": "Top Pick" | "Recommended" | "Adventure Choice" | "Family Choice" | "Best Value",
-    "reason": "Accise reason why this vehicle suits ${destination} (e.g., Coastal roads, easy beach hopping)",
-    "location": "Street, area, or landmark in ${destination}",
-    "features": ["Helmets included", "Free hotel delivery", "Insurance options"]
+    "reason": "Why this vehicle type suits ${destination} geography or traveler style",
+    "location": "Street, area, or landmark in ${destination}, Sri Lanka",
+    "features": ["GPS included", "Free cancellation", "Insurance included"]
   }
 ]`;
 
@@ -65,8 +56,10 @@ JSON format:
       process.env.GEMINI_MODEL,
       "gemini-3.6-flash",
       "gemini-3.5-flash-lite",
-      "gemini-3.7-flash",
       "gemini-3.5-flash",
+      "gemini-3.7-flash",
+      "gemini-3.8-flash",
+      "gemini-flash-latest",
     ].filter(Boolean)),
   ];
 
@@ -89,7 +82,7 @@ JSON format:
             responseMimeType: "application/json",
           },
         }),
-        signal: AbortSignal.timeout(20000),
+        signal: AbortSignal.timeout(7000),
       });
 
       if (response.ok) {
@@ -99,14 +92,9 @@ JSON format:
       }
 
       const errorText = await response.text();
-      lastError = new Error(`Model ${model} failed (${response.status}): ${errorText}`);
-
-      if ([503, 429, 500, 404].includes(response.status) || errorText.includes("demand") || errorText.includes("not found")) {
-        console.warn(`[GeminiVehicleService] Model ${model} returned ${response.status}. Trying next candidate model...`);
-        continue;
-      } else {
-        throw lastError;
-      }
+      lastError = new Error(`Model ${model} failed (${response.status}): ${errorText.slice(0, 200)}`);
+      console.warn(`[GeminiVehicleService] Model ${model} returned ${response.status}. Trying next candidate model...`);
+      continue;
     } catch (e) {
       lastError = e;
       console.warn(`[GeminiVehicleService] Model ${model} failed (${e.message}). Trying next candidate model...`);
@@ -145,7 +133,7 @@ JSON format:
       reason: shop.reason || "Recommended transport for exploring this destination.",
       location: shop.location || `Central ${destination}`,
       features: Array.isArray(shop.features) ? shop.features : ["Standard Insurance", "Helmets/Safety Included"],
-      googleMapsUrl: `https://www.google.com/maps/search/${encodeURIComponent(`${shopName} ${destination} Sri Lanka`)}`,
+      googleMapsUrl: `https://www.google.com/maps/search/${encodeURIComponent(`${shopName} ${destination}`)}`,
       source: "gemini",
     };
   });

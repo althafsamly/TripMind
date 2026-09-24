@@ -22,8 +22,8 @@ async function fetchActivitiesWithGemini({ destination, budget = 75000, tripType
     ? `Focus especially on activities in the "${category}" category.`
     : "Provide a diverse, engaging mix across Sightseeing, Adventure, Hiking, Culture, Nature, Food, Beaches, and Wellness.";
 
-  const prompt = `You are an expert Sri Lankan tour guide and destination specialist.
-Generate exactly 6 real, well-known, authentic attractions, outdoor adventures, guided excursions, or cultural experiences in or immediately around "${destination}", Sri Lanka.
+  const prompt = `You are a Sri Lanka travel expert and destination specialist with deep knowledge of real attractions, activities, and experiences across every city and region in Sri Lanka.
+Generate exactly 6 REAL, genuine, well-known attractions, outdoor adventures, guided excursions, or cultural experiences that ACTUALLY EXIST in or immediately around "${destination}", Sri Lanka.
 
 ${excludeClause}Context:
 - Destination: ${destination}, Sri Lanka
@@ -32,16 +32,16 @@ ${excludeClause}Context:
 - Preferences: ${categoryConstraint}
 
 Requirements:
-- Every activity must be a REAL, genuine attraction or experience located in or easily accessible from ${destination}.
-- "cost": Realistic admission, ticket, park permit, or tour cost in Sri Lankan Rupees (LKR) per person. Use 0 for free attractions (e.g. public beaches, viewpoints, public hiking trails).
+- Every activity MUST be a REAL, genuine attraction or experience that actually exists in ${destination}, Sri Lanka. Do NOT invent places.
+- "cost": Realistic admission or tour cost in Sri Lankan Rupees (LKR). Use 0 for free public attractions.
 - "category": MUST be one of ["Sightseeing", "Adventure", "Hiking", "Culture", "Nature", "Beaches", "Food", "Wellness"].
 - "timeSlot": MUST be one of ["Morning", "Afternoon", "Evening"].
-- "duration": Realistic time (e.g. "2 hours", "3 hours", "Half Day", "1.5 hours").
-- "highlight": One actionable insider tip for travelers (e.g. "Climb early at 7 AM to avoid sun exposure and lines", "Cover shoulders and knees for temple entry", "Pre-book blue train tickets in advance").
-- "location": Exact landmark, village, or proximity.
-- "imageTag": MUST be the most matching tag from: ["botanical_garden", "cultural_dance", "tooth_temple", "kandy_lake", "buddha_statue", "cave_temple", "sigiriya_rock", "pidurangala", "elephant_safari", "nine_arch", "whale_watching", "tea_plantation", "surfing", "zipline", "waterfall", "ayurveda_massage", "cooking_food", "temple", "galle_fort", "lighthouse", "coconut_hill", "snorkeling", "stilt_fishermen", "horton_plains", "hiking", "village_tour", "beach", "market"]. Choose the tag that visually depicts what travelers actually see or do in this activity.
+- "duration": Realistic time (e.g. "2 hours", "3 hours", "Half Day").
+- "highlight": One actionable insider tip (e.g. "Arrive early to beat the crowds").
+- "location": Exact landmark, district, or neighborhood within ${destination}, Sri Lanka.
+- "imageTag": MUST be one of: ["botanical_garden", "cultural_dance", "buddha_statue", "cave_temple", "elephant_safari", "whale_watching", "tea_plantation", "surfing", "zipline", "waterfall", "ayurveda_massage", "cooking_food", "temple", "lighthouse", "snorkeling", "hiking", "village_tour", "beach", "market", "museum", "castle", "city_tour", "art_gallery", "national_park", "mountain", "river_cruise", "street_food", "shopping"].
 
-You MUST reply with ONLY a raw JSON array containing exactly 6 objects. Do not include markdown codeblocks, do not include explanations.
+You MUST reply with ONLY a raw JSON array of exactly 6 objects. No markdown, no explanation.
 
 JSON format:
 [
@@ -52,11 +52,11 @@ JSON format:
     "timeSlot": "Morning",
     "duration": "2.5 hours",
     "cost": 0,
-    "icon": "🚂",
-    "imageTag": "nine_arch",
-    "description": "2-sentence engaging description of the activity and why it is special in ${destination}.",
+    "icon": "🗺️",
+    "imageTag": "city_tour",
+    "description": "2-sentence description of the activity and why it is special in ${destination}.",
     "highlight": "Essential insider tip on visiting hours, tickets, or etiquette.",
-    "location": "Specific location or landmark in ${destination}"
+    "location": "Specific location or landmark in ${destination}, Sri Lanka"
   }
 ]`;
 
@@ -65,8 +65,10 @@ JSON format:
       process.env.GEMINI_MODEL,
       "gemini-3.6-flash",
       "gemini-3.5-flash-lite",
-      "gemini-3.7-flash",
       "gemini-3.5-flash",
+      "gemini-3.7-flash",
+      "gemini-3.8-flash",
+      "gemini-flash-latest",
     ].filter(Boolean)),
   ];
 
@@ -80,7 +82,7 @@ JSON format:
       const response = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        signal: AbortSignal.timeout(20000),
+        signal: AbortSignal.timeout(7000),
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {

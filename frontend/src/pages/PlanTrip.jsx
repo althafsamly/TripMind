@@ -7,6 +7,7 @@ import {
   getPexelsDestinationPhoto,
   getLocalActivityFallback,
 } from "../utils/activityImages";
+import WeatherAlert from "../components/WeatherAlert";
 import "./PlanTrip.css";
 
 const locationInterests = {
@@ -101,6 +102,9 @@ function PlanTrip() {
   const [activityCategoryFilter, setActivityCategoryFilter] = useState("All");
   const [loadingMoreActivities, setLoadingMoreActivities] = useState(false);
   const [loadMoreActivitiesError, setLoadMoreActivitiesError] = useState("");
+
+  // Itinerary generation loading state
+  const [itineraryLoading, setItineraryLoading] = useState(false);
 
   // Voice AI States & Intelligence
   const [voiceState, setVoiceState] = useState("idle"); // "idle" | "listening" | "processing" | "success" | "error"
@@ -473,7 +477,7 @@ function PlanTrip() {
   }
 
   // Process voice/natural language transcript using backend Gemini AI + local fallback
-  async function handleProcessVoiceTranscript(rawText) {
+  async function handleProcessVoiceTranscript(rawText, playAudio = false) {
     if (!rawText || !rawText.trim()) return;
 
     // Abort previous backend fetch if any
@@ -508,7 +512,7 @@ function PlanTrip() {
           applyTripPlan(data.plan);
           setExtractedPlan(data.plan);
           setVoiceState("success");
-          if (data.plan.voiceConfirmation) {
+          if (data.plan.voiceConfirmation && playAudio) {
             speakVoiceResponse(data.plan.voiceConfirmation);
           }
           abortControllerRef.current = null;
@@ -527,7 +531,7 @@ function PlanTrip() {
       // Fallback to local plan if backend was unreachable
       setExtractedPlan(localPlan);
       setVoiceState("success");
-      if (localPlan.voiceConfirmation) {
+      if (localPlan.voiceConfirmation && playAudio) {
         speakVoiceResponse(localPlan.voiceConfirmation);
       }
       abortControllerRef.current = null;
@@ -615,11 +619,9 @@ function PlanTrip() {
       };
 
       recognition.onend = () => {
-        recognitionRef.current = null;
-        const textToProcess = (voiceTranscriptRef.current || "").trim();
-        if (textToProcess.length >= 3) {
-          handleProcessVoiceTranscript(textToProcess);
-        } else {
+        if (capturedText && capturedText.trim().length > 3) {
+          handleProcessVoiceTranscript(capturedText.trim(), true);
+        } else if (voiceState === "listening") {
           setVoiceState("idle");
         }
       };
@@ -634,7 +636,7 @@ function PlanTrip() {
 
   function handleSamplePromptClick(samplePrompt) {
     setTextInputPrompt(samplePrompt);
-    handleProcessVoiceTranscript(samplePrompt);
+    handleProcessVoiceTranscript(samplePrompt, false);
   }
 
   function getTravelerCount() {
@@ -893,10 +895,8 @@ function PlanTrip() {
 
   // Step 1 Validation & Proceed
   function handleContinueToHotels(e) {
-    e.preventDefault();
-    if (weatherLoading) {
-      alert("Please wait while we finish analyzing weather and seasonal advisories for your destination.");
-      return;
+    if (e && typeof e.preventDefault === "function") {
+      e.preventDefault();
     }
     if (!destination.trim()) {
       alert("Please enter a destination in Sri Lanka.");
@@ -919,6 +919,26 @@ function PlanTrip() {
     window.scrollTo({ top: 0, behavior: "smooth" });
     fetchHotelsFromApi();
   }
+
+  // Budget Tier presets helper for dark UI cards
+  function handleSelectBudgetTier(tier) {
+    const nights = Math.max(1, calculateNights());
+    if (tier === "budget") {
+      setBudget(String(Math.max(45000, nights * 15000)));
+    } else if (tier === "standard") {
+      setBudget(String(Math.max(85000, nights * 28000)));
+    } else if (tier === "luxury") {
+      setBudget(String(Math.max(180000, nights * 60000)));
+    }
+  }
+
+  const activeBudgetTier = useMemo(() => {
+    const val = Number(budget) || 0;
+    if (val <= 0) return null;
+    if (val <= 55000) return "budget";
+    if (val <= 130000) return "standard";
+    return "luxury";
+  }, [budget]);
 
   // Step 2 Validation & Proceed
   function handleContinueToActivities() {
@@ -969,92 +989,92 @@ function PlanTrip() {
         dayActivities.push(
           act1
             ? {
-                slot: "Afternoon",
-                time: "01:30 PM",
-                duration: act1.duration || "2 - 3 hrs",
-                location: act1.title,
-                description: act1.description,
-                category: act1.category || "Sightseeing",
-                highlight: act1.highlight || act1.tip || null,
-              }
+              slot: "Afternoon",
+              time: "01:30 PM",
+              duration: act1.duration || "2 - 3 hrs",
+              location: act1.title,
+              description: act1.description,
+              category: act1.category || "Sightseeing",
+              highlight: act1.highlight || act1.tip || null,
+            }
             : {
-                slot: "Afternoon",
-                time: "01:30 PM",
-                duration: "2 - 3 hrs",
-                location: `${destName} Old Town & Viewpoints`,
-                description: `Explore ${destName} town center, scenic viewpoints, artisan boutiques, and local cafes.`,
-                category: "Exploration",
-                highlight: null,
-              }
+              slot: "Afternoon",
+              time: "01:30 PM",
+              duration: "2 - 3 hrs",
+              location: `${destName} Old Town & Viewpoints`,
+              description: `Explore ${destName} town center, scenic viewpoints, artisan boutiques, and local cafes.`,
+              category: "Exploration",
+              highlight: null,
+            }
         );
 
         const act2 = pool.shift();
         dayActivities.push(
           act2
             ? {
-                slot: "Evening",
-                time: "06:30 PM",
-                duration: act2.duration || "2 hrs",
-                location: act2.title,
-                description: act2.description,
-                category: act2.category || "Evening",
-                highlight: act2.highlight || act2.tip || null,
-              }
+              slot: "Evening",
+              time: "06:30 PM",
+              duration: act2.duration || "2 hrs",
+              location: act2.title,
+              description: act2.description,
+              category: act2.category || "Evening",
+              highlight: act2.highlight || act2.tip || null,
+            }
             : {
-                slot: "Evening",
-                time: "06:30 PM",
-                duration: "2 hrs",
-                location: `${destName} Local Dining Experience`,
-                description: `Enjoy a traditional Sri Lankan rice & curry dinner and relaxed evening atmosphere near ${hotelName}.`,
-                category: "Dining",
-                highlight: null,
-              }
+              slot: "Evening",
+              time: "06:30 PM",
+              duration: "2 hrs",
+              location: `${destName} Local Dining Experience`,
+              description: `Enjoy a traditional Sri Lankan rice & curry dinner and relaxed evening atmosphere near ${hotelName}.`,
+              category: "Dining",
+              highlight: null,
+            }
         );
       } else if (dayNum === daysCount) {
         const act1 = pool.shift();
         dayActivities.push(
           act1
             ? {
-                slot: "Morning",
-                time: "08:30 AM",
-                duration: act1.duration || "2 - 3 hrs",
-                location: act1.title,
-                description: act1.description,
-                category: act1.category || "Sightseeing",
-                highlight: act1.highlight || act1.tip || null,
-              }
+              slot: "Morning",
+              time: "08:30 AM",
+              duration: act1.duration || "2 - 3 hrs",
+              location: act1.title,
+              description: act1.description,
+              category: act1.category || "Sightseeing",
+              highlight: act1.highlight || act1.tip || null,
+            }
             : {
-                slot: "Morning",
-                time: "08:30 AM",
-                duration: "2 hrs",
-                location: `${destName} Sunrise Nature Walk`,
-                description: `Scenic morning stroll and leisurely breakfast at ${hotel?.name || "your accommodation"}.`,
-                category: "Nature",
-                highlight: null,
-              }
+              slot: "Morning",
+              time: "08:30 AM",
+              duration: "2 hrs",
+              location: `${destName} Sunrise Nature Walk`,
+              description: `Scenic morning stroll and leisurely breakfast at ${hotel?.name || "your accommodation"}.`,
+              category: "Nature",
+              highlight: null,
+            }
         );
 
         const act2 = pool.shift();
         dayActivities.push(
           act2
             ? {
-                slot: "Afternoon",
-                time: "01:30 PM",
-                duration: act2.duration || "2 hrs",
-                location: act2.title,
-                description: act2.description,
-                category: act2.category || "Shopping",
-                highlight: act2.highlight || act2.tip || null,
-              }
+              slot: "Afternoon",
+              time: "01:30 PM",
+              duration: act2.duration || "2 hrs",
+              location: act2.title,
+              description: act2.description,
+              category: act2.category || "Shopping",
+              highlight: act2.highlight || act2.tip || null,
+            }
             : {
-                slot: "Afternoon",
-                time: "01:30 PM",
-                duration: "2 hrs",
-                location: "Ceylon Tea & Spice Boutiques",
-                description: "Souvenir shopping for authentic Ceylon single-origin tea, aromatic spices, and local artisan woodcrafts.",
-                category: "Shopping",
-                highlight: null,
-              }
+              slot: "Afternoon",
+              time: "01:30 PM",
+              duration: "2 hrs",
+              location: "Ceylon Tea & Spice Boutiques",
+              description: "Souvenir shopping for authentic Ceylon single-origin tea, aromatic spices, and local artisan woodcrafts.",
+              category: "Shopping",
+              highlight: null,
+            }
         );
 
         dayActivities.push({
@@ -1071,69 +1091,69 @@ function PlanTrip() {
         dayActivities.push(
           act1
             ? {
-                slot: "Morning",
-                time: "08:30 AM",
-                duration: act1.duration || "2 - 3 hrs",
-                location: act1.title,
-                description: act1.description,
-                category: act1.category || "Adventure",
-                highlight: act1.highlight || act1.tip || null,
-              }
+              slot: "Morning",
+              time: "08:30 AM",
+              duration: act1.duration || "2 - 3 hrs",
+              location: act1.title,
+              description: act1.description,
+              category: act1.category || "Adventure",
+              highlight: act1.highlight || act1.tip || null,
+            }
             : {
-                slot: "Morning",
-                time: "08:30 AM",
-                duration: "2 - 3 hrs",
-                location: `${destName} Hidden Sights & Viewpoints`,
-                description: `Morning discovery of scenic hidden gems, photo stops, and lush surrounding nature.`,
-                category: "Sightseeing",
-                highlight: null,
-              }
+              slot: "Morning",
+              time: "08:30 AM",
+              duration: "2 - 3 hrs",
+              location: `${destName} Hidden Sights & Viewpoints`,
+              description: `Morning discovery of scenic hidden gems, photo stops, and lush surrounding nature.`,
+              category: "Sightseeing",
+              highlight: null,
+            }
         );
 
         const act2 = pool.shift();
         dayActivities.push(
           act2
             ? {
-                slot: "Afternoon",
-                time: "01:30 PM",
-                duration: act2.duration || "2 - 3 hrs",
-                location: act2.title,
-                description: act2.description,
-                category: act2.category || "Sightseeing",
-                highlight: act2.highlight || act2.tip || null,
-              }
+              slot: "Afternoon",
+              time: "01:30 PM",
+              duration: act2.duration || "2 - 3 hrs",
+              location: act2.title,
+              description: act2.description,
+              category: act2.category || "Sightseeing",
+              highlight: act2.highlight || act2.tip || null,
+            }
             : {
-                slot: "Afternoon",
-                time: "01:30 PM",
-                duration: "2 hrs",
-                location: "Estate Trails & Nature Leisure",
-                description: `Afternoon relaxation, tea trail walking, or swimming around ${destName}.`,
-                category: "Leisure",
-                highlight: null,
-              }
+              slot: "Afternoon",
+              time: "01:30 PM",
+              duration: "2 hrs",
+              location: "Estate Trails & Nature Leisure",
+              description: `Afternoon relaxation, tea trail walking, or swimming around ${destName}.`,
+              category: "Leisure",
+              highlight: null,
+            }
         );
 
         const act3 = pool.shift();
         dayActivities.push(
           act3
             ? {
-                slot: "Evening",
-                time: "06:30 PM",
-                duration: act3.duration || "2 hrs",
-                location: act3.title,
-                description: act3.description,
-                category: act3.category || "Dining",
-                highlight: act3.highlight || act3.tip || null,
-              }
+              slot: "Evening",
+              time: "06:30 PM",
+              duration: act3.duration || "2 hrs",
+              location: act3.title,
+              description: act3.description,
+              category: act3.category || "Dining",
+              highlight: act3.highlight || act3.tip || null,
+            }
             : {
-                slot: "Evening",
-                time: "06:30 PM",
-                duration: "2 hrs",
-                location: "Night Food Walk & Authentic Eats",
-                description: "Savor hot kottu roti, fresh coastal seafood, or hopper platters at a top-rated local night spot.",
-                category: "Dining",
-                highlight: null,
-              }
+              slot: "Evening",
+              time: "06:30 PM",
+              duration: "2 hrs",
+              location: "Night Food Walk & Authentic Eats",
+              description: "Savor hot kottu roti, fresh coastal seafood, or hopper platters at a top-rated local night spot.",
+              category: "Dining",
+              highlight: null,
+            }
         );
       }
 
@@ -1143,8 +1163,8 @@ function PlanTrip() {
           dayNum === 1
             ? "Arrival & First Explorations"
             : dayNum === daysCount
-            ? "Highlights & Farewell"
-            : `Adventure & Discovery Day ${dayNum}`,
+              ? "Highlights & Farewell"
+              : `Adventure & Discovery Day ${dayNum}`,
         activities: dayActivities,
         morning: dayActivities[0]?.description || "",
         afternoon: dayActivities[1]?.description || "",
@@ -1180,6 +1200,8 @@ function PlanTrip() {
       }
     }
 
+    setItineraryLoading(true);
+
     const start = new Date(startDate);
     const end = new Date(endDate);
     const days = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
@@ -1212,7 +1234,11 @@ function PlanTrip() {
       interests: selectedActivities.map((a) => a.category),
     };
 
-    navigate("/trip-result", { state: tripData });
+    // Show loading animation briefly before navigating
+    setTimeout(() => {
+      setItineraryLoading(false);
+      navigate("/trip-result", { state: tripData });
+    }, 2200);
   }
 
   // Filtered hotels in Step 2
@@ -1245,7 +1271,7 @@ function PlanTrip() {
   return (
     <div className="plan-trip-page">
       <div className="trip-form-card wizard-container">
-        
+
         {/* Wizard Progress Bar */}
         <div className="wizard-progress-bar">
           <div
@@ -1279,572 +1305,583 @@ function PlanTrip() {
 
         {/* ================= STEP 1: TRIP BASICS ================= */}
         {step === 1 && (
-          <div className="wizard-step-content">
-            <p className="planner-label">STEP 1 OF 3 • YOUR PREFERENCES</p>
-            <h1>Plan Your Sri Lankan Adventure</h1>
-            <p className="planner-description">
-              Tell TripMind AI where you're heading and your budget, or use our Voice AI assistant to speak naturally.
-            </p>
+          <div className="wizard-step-content dark-theme-step">
+            <div className="dark-theme-header">
+              <button
+                type="button"
+                className="theme-back-btn"
+                onClick={() => navigate(-1)}
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="19" y1="12" x2="5" y2="12"></line>
+                  <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+                <span>BACK</span>
+              </button>
 
-            {/* Comprehensive Voice AI Planner Assistant */}
-            <div className="voice-planner-card">
-              <div className="voice-planner-top">
-                <div className="voice-title-wrap">
-                  <div className={`voice-icon-indicator ${voiceState === "listening" ? "active" : ""}`}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
-                      <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                      <line x1="12" y1="19" x2="12" y2="22"></line>
-                    </svg>
-                  </div>
-                  <div>
-                    <div className="voice-title-row">
-                      <h3>Voice AI Trip Planner</h3>
-                      <span className="voice-ai-badge">Powered by Gemini AI</span>
+              <h1 className="dark-main-title">
+                Plan your dream <span className="dark-title-muted">trip in seconds.</span>
+              </h1>
+              <p className="dark-main-desc">
+                Provide your preferences and let our advanced AI build a premium, tailored itinerary for your next adventure.
+              </p>
+            </div>
+
+            <div className="dark-step-1-grid">
+              {/* Left Column: Form & Voice Assistant */}
+              <div className="dark-form-column">
+
+                {/* Comprehensive Voice AI Planner Assistant */}
+                <div className="voice-planner-card dark-glass-card">
+                  <div className="voice-planner-top">
+                    <div className="voice-title-wrap">
+                      <div className={`voice-icon-indicator ${voiceState === "listening" ? "active" : ""}`}>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+                          <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                          <line x1="12" y1="19" x2="12" y2="22"></line>
+                        </svg>
+                      </div>
+                      <div>
+                        <div className="voice-title-row">
+                          <h3>Voice AI Trip Planner</h3>
+                          <span className="voice-ai-badge">Powered by Gemini AI</span>
+                        </div>
+                        <p className="voice-subtitle">
+                          Speak or type naturally. TripMind AI extracts your destination, dates, budget, and travel style automatically.
+                        </p>
+                      </div>
                     </div>
-                    <p className="voice-subtitle">
-                      Speak or type naturally. TripMind AI extracts your destination, dates, budget, and travel style automatically.
-                    </p>
-                  </div>
-                </div>
 
-                <div className="voice-mode-tabs">
-                  <button
-                    type="button"
-                    className={`voice-tab-btn ${voiceMode === "voice" ? "active" : ""}`}
-                    onClick={() => {
-                      setVoiceMode("voice");
-                      stopSpeaking();
-                    }}
-                  >
-                    Microphone
-                  </button>
-                  <button
-                    type="button"
-                    className={`voice-tab-btn ${voiceMode === "text" ? "active" : ""}`}
-                    onClick={() => {
-                      setVoiceMode("text");
-                      stopSpeaking();
-                    }}
-                  >
-                    Type Plan
-                  </button>
-                </div>
-              </div>
-
-              {voiceMode === "voice" ? (
-                <div className="voice-action-area">
-                  <div className="voice-btn-container">
-                    <button
-                      type="button"
-                      className={`voice-record-btn ${voiceState === "listening" ? "listening" : ""} ${voiceState === "processing" ? "processing" : ""}`}
-                      onClick={handleToggleVoiceListening}
-                      disabled={voiceState === "processing"}
-                    >
-                      {voiceState === "listening" ? (
-                        <>
-                          <div className="audio-wave-anim">
-                            <span className="wave-bar"></span>
-                            <span className="wave-bar"></span>
-                            <span className="wave-bar"></span>
-                            <span className="wave-bar"></span>
-                          </div>
-                          <span>Listening... Tap to Complete</span>
-                        </>
-                      ) : voiceState === "processing" ? (
-                        <>
-                          <span className="mini-spinner white"></span>
-                          <span>TripMind AI is analyzing your plan...</span>
-                        </>
-                      ) : (
-                        <>
-                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
-                            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                            <line x1="12" y1="19" x2="12" y2="22"></line>
-                          </svg>
-                          <span>Plan Trip with Voice</span>
-                        </>
-                      )}
-                    </button>
-
-                    {(voiceState === "listening" || voiceState === "processing" || isSpeaking) && (
+                    <div className="voice-mode-tabs">
                       <button
                         type="button"
-                        className="voice-stop-btn"
-                        onClick={handleStopVoiceAI}
-                        title="Stop Voice AI Operation"
+                        className={`voice-tab-btn ${voiceMode === "voice" ? "active" : ""}`}
+                        onClick={() => {
+                          setVoiceMode("voice");
+                          stopSpeaking();
+                        }}
                       >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                          <rect x="5" y="5" width="14" height="14" rx="2" />
-                        </svg>
-                        <span>Stop</span>
+                        Microphone
                       </button>
+                      <button
+                        type="button"
+                        className={`voice-tab-btn ${voiceMode === "text" ? "active" : ""}`}
+                        onClick={() => {
+                          setVoiceMode("text");
+                          stopSpeaking();
+                        }}
+                      >
+                        Type Plan
+                      </button>
+                    </div>
+                  </div>
+
+                  {voiceMode === "voice" ? (
+                    <div className="voice-action-area">
+                      <div className="voice-btn-container">
+                        <button
+                          type="button"
+                          className={`voice-record-btn ${voiceState === "listening" ? "listening" : ""} ${voiceState === "processing" ? "processing" : ""}`}
+                          onClick={handleToggleVoiceListening}
+                          disabled={voiceState === "processing"}
+                        >
+                          {voiceState === "listening" ? (
+                            <>
+                              <div className="audio-wave-anim">
+                                <span className="wave-bar"></span>
+                                <span className="wave-bar"></span>
+                                <span className="wave-bar"></span>
+                                <span className="wave-bar"></span>
+                              </div>
+                              <span>Listening... Tap to Complete</span>
+                            </>
+                          ) : voiceState === "processing" ? (
+                            <>
+                              <span className="mini-spinner white"></span>
+                              <span>TripMind AI is analyzing your plan...</span>
+                            </>
+                          ) : (
+                            <>
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+                                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                                <line x1="12" y1="19" x2="12" y2="22"></line>
+                              </svg>
+                              <span>Plan Trip with Voice</span>
+                            </>
+                          )}
+                        </button>
+
+                        {(voiceState === "listening" || voiceState === "processing" || isSpeaking) && (
+                          <button
+                            type="button"
+                            className="voice-stop-btn"
+                            onClick={handleStopVoiceAI}
+                            title="Stop Voice AI Operation"
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                              <rect x="5" y="5" width="14" height="14" rx="2" />
+                            </svg>
+                            <span>Stop</span>
+                          </button>
+                        )}
+                      </div>
+
+                      {transcriptText && (
+                        <div className={`voice-transcript-box ${voiceState}`}>
+                          <p>{transcriptText}</p>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <form
+                      className="voice-text-prompt-form"
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        handleProcessVoiceTranscript(textInputPrompt, false);
+                      }}
+                    >
+                      <input
+                        type="text"
+                        className="voice-prompt-input"
+                        placeholder="e.g. 4 days romantic trip to Ella with my girlfriend next Friday on an 85000 budget"
+                        value={textInputPrompt}
+                        onChange={(e) => setTextInputPrompt(e.target.value)}
+                      />
+                      <button
+                        type="submit"
+                        className="voice-prompt-submit"
+                        disabled={voiceState === "processing" || !textInputPrompt.trim()}
+                      >
+                        {voiceState === "processing" ? "Parsing..." : "Apply Plan →"}
+                      </button>
+                      {(voiceState === "listening" || voiceState === "processing" || isSpeaking) && (
+                        <button
+                          type="button"
+                          className="voice-stop-btn text-mode-stop"
+                          onClick={handleStopVoiceAI}
+                          title="Stop Voice AI Operation"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                            <rect x="5" y="5" width="14" height="14" rx="2" />
+                          </svg>
+                          <span>Stop</span>
+                        </button>
+                      )}
+                    </form>
+                  )}
+
+                  {/* Extracted Plan Summary Confirmation */}
+                  {voiceState === "success" && extractedPlan && (
+                    <div className="voice-extracted-summary">
+                      <div className="extracted-header">
+                        <span className="extracted-status-badge">Preferences Auto-Filled</span>
+                        <div className="extracted-audio-actions">
+                          {extractedPlan.voiceConfirmation && (
+                            <button
+                              type="button"
+                              className="voice-replay-btn"
+                              onClick={() => {
+                                if (isSpeaking) {
+                                  stopSpeaking();
+                                } else {
+                                  speakVoiceResponse(extractedPlan.voiceConfirmation);
+                                }
+                              }}
+                            >
+                              {isSpeaking ? "Stop Audio" : "Replay AI Audio"}
+                            </button>
+                          )}
+                          {isSpeaking && (
+                            <button
+                              type="button"
+                              className="voice-stop-btn small-stop"
+                              onClick={handleStopVoiceAI}
+                              title="Stop AI Voice Audio"
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                                <rect x="5" y="5" width="14" height="14" rx="2" />
+                              </svg>
+                              <span>Stop Voice</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <div className="extracted-chips">
+                        <span className="extracted-chip dest">{extractedPlan.destination}</span>
+                        <span className="extracted-chip dates">{extractedPlan.days} Days • {extractedPlan.startDate} to {extractedPlan.endDate}</span>
+                        <span className="extracted-chip budget">LKR {Number(extractedPlan.budget).toLocaleString()}</span>
+                        <span className="extracted-chip type">{extractedPlan.tripType} ({extractedPlan.groupSize || (extractedPlan.tripType === "Couple" ? 2 : 1)} travelers)</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Sample Quick Prompt Chips */}
+                  <div className="voice-sample-prompts">
+                    <span className="sample-prompts-label">Try speaking or click:</span>
+                    <div className="sample-prompts-list">
+                      <button
+                        type="button"
+                        className="sample-prompt-pill"
+                        onClick={() => handleSamplePromptClick("4 days romantic trip to Ella with my girlfriend next Friday on 85000 budget")}
+                      >
+                        "4 days romantic trip to Ella on 85k"
+                      </button>
+                      <button
+                        type="button"
+                        className="sample-prompt-pill"
+                        onClick={() => handleSamplePromptClick("Family vacation in Kandy for 5 people 3 days around 1.5 lakhs")}
+                      >
+                        "3 days family vacation in Kandy for 5 people"
+                      </button>
+                      <button
+                        type="button"
+                        className="sample-prompt-pill"
+                        onClick={() => handleSamplePromptClick("Solo beach trip to Mirissa for a weekend with 45k")}
+                      >
+                        "Weekend solo beach trip to Mirissa on 45k"
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <form onSubmit={handleContinueToHotels} className={`trip-form dark-trip-form ${highlightFields ? "highlight-applied" : ""}`}>
+
+                  {/* Section 1: Where are you going? */}
+                  <div className="dark-form-section">
+                    <div className="dark-section-title-row">
+                      <span className="dark-section-bullet">•</span>
+                      <h3 className="dark-section-title">WHERE ARE YOU GOING?</h3>
+                    </div>
+                    <div className="dark-input-container">
+                      <input
+                        type="text"
+                        className="dark-input-field"
+                        placeholder="Search destination..."
+                        value={destination}
+                        onChange={(e) => {
+                          setDestination(e.target.value);
+                          setSelectedHotel(null);
+                          setSelectedActivities([]);
+                          setHotels([]);
+                          setActivities([]);
+                        }}
+                        required
+                      />
+                      <div className="dark-input-icon-right" title="Search Destination">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                          <circle cx="12" cy="12" r="9"></circle>
+                          <circle cx="12" cy="12" r="3"></circle>
+                          <line x1="12" y1="1" x2="12" y2="4"></line>
+                          <line x1="12" y1="20" x2="12" y2="23"></line>
+                          <line x1="1" y1="12" x2="4" y2="12"></line>
+                          <line x1="20" y1="12" x2="23" y2="12"></line>
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section 2: When are you going? */}
+                  <div className="dark-form-section">
+                    <div className="dark-section-title-row">
+                      <span className="dark-section-bullet">•</span>
+                      <h3 className="dark-section-title">WHEN ARE YOU GOING?</h3>
+                    </div>
+                    <div className="dark-date-inputs-row">
+                      <div className="dark-date-col">
+                        <span className="dark-micro-label">ARRIVAL DATE</span>
+                        <div className="dark-input-container with-icon-left">
+                          <span className="dark-input-icon-left">
+                            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                              <line x1="16" y1="2" x2="16" y2="6"></line>
+                              <line x1="8" y1="2" x2="8" y2="6"></line>
+                              <line x1="3" y1="10" x2="21" y2="10"></line>
+                            </svg>
+                          </span>
+                          <input
+                            type="date"
+                            className="dark-input-field date-field"
+                            value={startDate}
+                            onChange={(e) => setStartDate(e.target.value)}
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div className="dark-date-col">
+                        <span className="dark-micro-label">DEPARTURE DATE</span>
+                        <div className="dark-input-container with-icon-left">
+                          <span className="dark-input-icon-left">
+                            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                              <line x1="16" y1="2" x2="16" y2="6"></line>
+                              <line x1="8" y1="2" x2="8" y2="6"></line>
+                              <line x1="3" y1="10" x2="21" y2="10"></line>
+                            </svg>
+                          </span>
+                          <input
+                            type="date"
+                            className="dark-input-field date-field"
+                            value={endDate}
+                            min={startDate}
+                            onChange={(e) => setEndDate(e.target.value)}
+                            required
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section 3: What is your budget? (From Screenshot 3) */}
+                  <div className="dark-form-section">
+                    <div className="dark-section-title-row">
+                      <span className="dark-section-bullet">•</span>
+                      <h3 className="dark-section-title">WHAT IS YOUR BUDGET?</h3>
+                    </div>
+
+                    <div className="budget-tier-cards-grid">
+                      <div
+                        className={`budget-tier-card ${activeBudgetTier === "budget" ? "selected" : ""}`}
+                        onClick={() => handleSelectBudgetTier("budget")}
+                      >
+                        <div className="budget-card-symbol">$</div>
+                        <h4>BUDGET</h4>
+                        <p>Affordable options for cost-conscious travelers.</p>
+                      </div>
+
+                      <div
+                        className={`budget-tier-card ${activeBudgetTier === "standard" ? "selected" : ""}`}
+                        onClick={() => handleSelectBudgetTier("standard")}
+                      >
+                        <div className="budget-card-symbol">$$</div>
+                        <h4>STANDARD</h4>
+                        <p>Balanced comfort and value for money.</p>
+                      </div>
+
+                      <div
+                        className={`budget-tier-card ${activeBudgetTier === "luxury" ? "selected" : ""}`}
+                        onClick={() => handleSelectBudgetTier("luxury")}
+                      >
+                        <div className="budget-card-symbol">$$$</div>
+                        <h4>LUXURY</h4>
+                        <p>Premium experiences with top-class amenities.</p>
+                      </div>
+                    </div>
+
+                    {/* Custom Budget Direct Input */}
+                    <div className="dark-budget-input-wrap">
+                      <span className="dark-currency-badge">LKR</span>
+                      <input
+                        type="number"
+                        className="dark-input-field budget-num-input"
+                        placeholder="e.g. 75000"
+                        value={budget}
+                        onChange={(e) => setBudget(e.target.value)}
+                        required
+                      />
+                    </div>
+                    {budget && Number(budget) > 0 && (
+                      <p className="budget-insight-hint dark-budget-hint">
+                        Suggested hotel allocation (40%): <strong>LKR {targetHotelBudget.toLocaleString()}</strong> (~LKR {Math.round(targetHotelBudget / Math.max(1, calculateNights())).toLocaleString()} / night)
+                      </p>
                     )}
                   </div>
 
-                  {transcriptText && (
-                    <div className={`voice-transcript-box ${voiceState}`}>
-                      <p>{transcriptText}</p>
+                  {/* Section 4: Who is traveling? (From Screenshot 3) */}
+                  <div className="dark-form-section">
+                    <div className="dark-section-title-row">
+                      <span className="dark-section-bullet">•</span>
+                      <h3 className="dark-section-title">WHO IS TRAVELING?</h3>
                     </div>
-                  )}
-                </div>
-              ) : (
-                <form
-                  className="voice-text-prompt-form"
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    handleProcessVoiceTranscript(textInputPrompt);
-                  }}
-                >
-                  <input
-                    type="text"
-                    className="voice-prompt-input"
-                    placeholder="e.g. 4 days romantic trip to Ella with my girlfriend next Friday on an 85000 budget"
-                    value={textInputPrompt}
-                    onChange={(e) => setTextInputPrompt(e.target.value)}
-                  />
-                  <button
-                    type="submit"
-                    className="voice-prompt-submit"
-                    disabled={voiceState === "processing" || !textInputPrompt.trim()}
-                  >
-                    {voiceState === "processing" ? "Parsing..." : "Apply Plan →"}
-                  </button>
-                  {(voiceState === "listening" || voiceState === "processing" || isSpeaking) && (
-                    <button
-                      type="button"
-                      className="voice-stop-btn text-mode-stop"
-                      onClick={handleStopVoiceAI}
-                      title="Stop Voice AI Operation"
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                        <rect x="5" y="5" width="14" height="14" rx="2" />
-                      </svg>
-                      <span>Stop</span>
-                    </button>
-                  )}
-                </form>
-              )}
 
-              {/* Extracted Plan Summary Confirmation */}
-              {voiceState === "success" && extractedPlan && (
-                <div className="voice-extracted-summary">
-                  <div className="extracted-header">
-                    <span className="extracted-status-badge">Preferences Auto-Filled</span>
-                    <div className="extracted-audio-actions">
-                      {extractedPlan.voiceConfirmation && (
-                        <button
-                          type="button"
-                          className="voice-replay-btn"
-                          onClick={() => {
-                            if (isSpeaking) {
-                              stopSpeaking();
-                            } else {
-                              speakVoiceResponse(extractedPlan.voiceConfirmation);
-                            }
-                          }}
-                        >
-                          {isSpeaking ? "Stop Audio" : "Replay AI Audio"}
-                        </button>
-                      )}
-                      {isSpeaking && (
-                        <button
-                          type="button"
-                          className="voice-stop-btn small-stop"
-                          onClick={handleStopVoiceAI}
-                          title="Stop AI Voice Audio"
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                            <rect x="5" y="5" width="14" height="14" rx="2" />
+                    <div className="traveler-tier-cards-grid">
+                      <div
+                        className={`traveler-tier-card ${tripType === "Solo" ? "selected" : ""}`}
+                        onClick={() => setTripType("Solo")}
+                      >
+                        <div className="traveler-card-icon purple">
+                          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z" />
                           </svg>
-                          <span>Stop Voice</span>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  <div className="extracted-chips">
-                    <span className="extracted-chip dest">{extractedPlan.destination}</span>
-                    <span className="extracted-chip dates">{extractedPlan.days} Days • {extractedPlan.startDate} to {extractedPlan.endDate}</span>
-                    <span className="extracted-chip budget">LKR {Number(extractedPlan.budget).toLocaleString()}</span>
-                    <span className="extracted-chip type">{extractedPlan.tripType} ({extractedPlan.groupSize || (extractedPlan.tripType === "Couple" ? 2 : 1)} travelers)</span>
-                  </div>
-                </div>
-              )}
-
-              {/* Sample Quick Prompt Chips */}
-              <div className="voice-sample-prompts">
-                <span className="sample-prompts-label">Try speaking or click:</span>
-                <div className="sample-prompts-list">
-                  <button
-                    type="button"
-                    className="sample-prompt-pill"
-                    onClick={() => handleSamplePromptClick("4 days romantic trip to Ella with my girlfriend next Friday on 85000 budget")}
-                  >
-                    "4 days romantic trip to Ella on 85k"
-                  </button>
-                  <button
-                    type="button"
-                    className="sample-prompt-pill"
-                    onClick={() => handleSamplePromptClick("Family vacation in Kandy for 5 people 3 days around 1.5 lakhs")}
-                  >
-                    "3 days family vacation in Kandy for 5 people"
-                  </button>
-                  <button
-                    type="button"
-                    className="sample-prompt-pill"
-                    onClick={() => handleSamplePromptClick("Solo beach trip to Mirissa for a weekend with 45k")}
-                  >
-                    "Weekend solo beach trip to Mirissa on 45k"
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <form onSubmit={handleContinueToHotels} className={`trip-form ${highlightFields ? "highlight-applied" : ""}`}>
-              {/* 1. Travel Dates First */}
-              <div className="form-row">
-                <div className="form-group">
-                  <label>1. Travel Start Date</label>
-                  <input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Travel End Date</label>
-                  <input
-                    type="date"
-                    value={endDate}
-                    min={startDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* Smart Seasonal Recommendations Based on Dates */}
-              {seasonalRecommendations && (
-                <div className="seasonal-recommendations-wrapper">
-                  <div className="seasonal-header-row">
-                    <div className="seasonal-title-wrap">
-                      <div className="seasonal-badge-row">
-                        <span className="seasonal-badge-tag">{seasonalRecommendations.seasonBadge}</span>
-                        {seasonalProvider === "gemini" && (
-                          <span className="seasonal-ai-pill">Gemini AI Verified</span>
-                        )}
-                        {seasonalLoading && (
-                          <span className="seasonal-analyzing-pill">
-                            <span className="mini-spinner green" />
-                            Analyzing with Gemini AI...
-                          </span>
-                        )}
+                        </div>
+                        <h4>JUST ME</h4>
                       </div>
-                      <p className="seasonal-weather-note">{seasonalRecommendations.weatherHint}</p>
+
+                      <div
+                        className={`traveler-tier-card ${tripType === "Couple" ? "selected" : ""}`}
+                        onClick={() => setTripType("Couple")}
+                      >
+                        <div className="traveler-card-icon indigo">
+                          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" />
+                          </svg>
+                        </div>
+                        <h4>COUPLE</h4>
+                      </div>
+
+                      <div
+                        className={`traveler-tier-card ${tripType === "Family" ? "selected" : ""}`}
+                        onClick={() => setTripType("Family")}
+                      >
+                        <div className="traveler-card-icon amber">
+                          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 4a3 3 0 100 6 3 3 0 000-6zm-6 8a2.5 2.5 0 100 5 2.5 2.5 0 000-5zm12 0a2.5 2.5 0 100 5 2.5 2.5 0 000-5zm-6 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                          </svg>
+                        </div>
+                        <h4>FAMILY</h4>
+                      </div>
+
+                      <div
+                        className={`traveler-tier-card ${tripType === "Friends" ? "selected" : ""}`}
+                        onClick={() => setTripType("Friends")}
+                      >
+                        <div className="traveler-card-icon coral">
+                          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M16.5 13c-1.2 0-3.07.34-4.5 1-1.43-.66-3.3-1-4.5-1C4.7 13 2 14.3 2 17v2h20v-2c0-2.7-2.7-4-5.5-4zM7.5 11c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3zm9 0c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3z" />
+                          </svg>
+                        </div>
+                        <h4>FRIENDS</h4>
+                      </div>
                     </div>
-                    <span className="seasonal-instruction">Click a recommended place or type below:</span>
-                  </div>
 
-                  <div className="seasonal-places-grid">
-                    {seasonalRecommendations.destinations.map((place) => {
-                      const isSelected = (destination || "").toLowerCase().trim() === place.name.toLowerCase().trim();
-                      return (
-                        <button
-                          type="button"
-                          key={place.name}
-                          className={`seasonal-place-card ${isSelected ? "active-pick" : ""}`}
-                          onClick={() => {
-                            setDestination(place.name);
-                            setSelectedHotel(null);
-                            setSelectedActivities([]);
-                            setHotels([]);
-                            setActivities([]);
-                          }}
-                        >
-                          <div className="place-card-top">
-                            <strong className="place-card-name">{place.name}</strong>
-                            {isSelected && <span className="place-selected-tick">✓ Selected</span>}
-                          </div>
-                          <span className="place-card-tag">{place.tag}</span>
-                          <p className="place-card-summary">{place.desc}</p>
-                        </button>
-                      );
-                    })}
+                    {/* Group Size Stepper when Family or Friends */}
+                    {(tripType === "Family" || tripType === "Friends") && (
+                      <div className="dark-group-size-box">
+                        <label className="dark-micro-label">
+                          {tripType === "Family" ? "FAMILY MEMBERS COUNT" : "FRIENDS COUNT"}
+                        </label>
+                        <div className="dark-stepper-wrap">
+                          <button
+                            type="button"
+                            className="dark-stepper-btn"
+                            onClick={() => setGroupSize((prev) => Math.max(3, (Number(prev) || 3) - 1))}
+                          >
+                            −
+                          </button>
+                          <input
+                            type="number"
+                            min="3"
+                            value={groupSize}
+                            onChange={(e) => setGroupSize(Math.max(3, Number(e.target.value) || 3))}
+                            className="dark-stepper-input"
+                            required
+                          />
+                          <button
+                            type="button"
+                            className="dark-stepper-btn"
+                            onClick={() => setGroupSize((prev) => (Number(prev) || 3) + 1)}
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
-              )}
+                </form>
 
-              {/* 2. Destination in Sri Lanka (pre-filled by click or typed) */}
-              <div className="form-group">
-                <label>
-                  2. Destination in Sri Lanka
-                  <span className="dest-helper-note"> (Choose from above or type any destination)</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Ella, Kandy, Galle, Mirissa, Sigiriya, Nuwara Eliya, Jaffna..."
-                  value={destination}
-                  onChange={(e) => {
-                    setDestination(e.target.value);
+                <WeatherAlert 
+                  destination={destination}
+                  startDate={startDate}
+                  onSwitchDestination={(dest) => {
+                    setDestination(dest);
                     setSelectedHotel(null);
                     setSelectedActivities([]);
                     setHotels([]);
                     setActivities([]);
                   }}
-                  required
                 />
               </div>
 
+              {/* Right Column: Sticky Trip Summary (Screenshot 4) */}
+              <div className="dark-summary-column">
+                <div className="dark-trip-summary-card">
+                  <div className="summary-watermark-globe">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
+                      <circle cx="12" cy="12" r="10" />
+                      <line x1="2" y1="12" x2="22" y2="12" />
+                      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                    </svg>
+                  </div>
 
-              {/* Travel Dates */}
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Start Date</label>
-                  <input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    required
-                  />
-                </div>
+                  <div className="summary-top-header">
+                    <h3>TRIP SUMMARY</h3>
+                    <div className="summary-title-line" />
+                  </div>
 
-                <div className="form-group">
-                  <label>End Date</label>
-                  <input
-                    type="date"
-                    value={endDate}
-                    min={startDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
+                  <div className="summary-field-group">
+                    <span className="summary-small-label">DESTINATION</span>
+                    <strong className="summary-main-val">
+                      {destination ? destination : "Destination not set"}
+                    </strong>
+                  </div>
 
-              {/* Weather, Monsoon & Natural Disaster Advisory */}
-              {destination.trim() && startDate && endDate && (
-                <div className="weather-advisory-container">
-                  {weatherLoading ? (
-                    <div className="weather-advisory-box loading" role="status" aria-live="polite">
-                      <div className="weather-spinner-wrapper">
-                        <div className="weather-spinner" />
-                      </div>
-                      <div className="weather-loading-text">
-                        <h4>Analyzing Weather & Seasonal Advisory</h4>
-                        <p>
-                          Checking climate, monsoon patterns, and rainfall conditions for <strong>{destination}</strong> in <strong>{getMonthNameFromDate(startDate)}</strong>...
-                        </p>
-                      </div>
+                  <div className="summary-two-col-row">
+                    <div className="summary-field-group">
+                      <span className="summary-small-label">DURATION</span>
+                      <span className="summary-sub-val">
+                        {startDate && endDate ? `${calculateNights() + 1} Days` : "---"}
+                      </span>
                     </div>
-                  ) : weatherAdvisory ? (
-                    weatherAdvisory.hasAdvisory ? (
-                      <div className={`weather-advisory-box alert-${weatherAdvisory.level || "warning"}`}>
-                        <div className="weather-advisory-header">
-                          <div className="weather-icon-badge warning">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
-                              <line x1="12" y1="9" x2="12" y2="13" />
-                              <line x1="12" y1="17" x2="12.01" y2="17" />
-                            </svg>
-                          </div>
-                          <div className="weather-title-wrap">
-                            <div className="weather-badge-row">
-                              <span className="weather-status-badge warning">{weatherAdvisory.badge || "Weather Advisory"}</span>
-                              {weatherAdvisory.season && (
-                                <span className="weather-season-pill">{weatherAdvisory.season}</span>
-                              )}
-                              <span className="weather-month-pill">{weatherAdvisory.monthName}</span>
-                            </div>
-                            <h4 className="weather-headline">{weatherAdvisory.headline}</h4>
-                          </div>
-                        </div>
 
-                        <p className="weather-summary-text">{weatherAdvisory.summary}</p>
+                    <div className="summary-field-group">
+                      <span className="summary-small-label">GROUP</span>
+                      <span className="summary-sub-val">
+                        {tripType === "Solo" ? "Just Me" : tripType ? `${tripType}${tripType === "Couple" ? " (2)" : ` (${groupSize})`}` : "---"}
+                      </span>
+                    </div>
+                  </div>
 
-                        {weatherAdvisory.risks && weatherAdvisory.risks.length > 0 && (
-                          <div className="weather-risks-section">
-                            <span className="weather-risks-title">Noted Weather Factors:</span>
-                            <ul className="weather-risks-list">
-                              {weatherAdvisory.risks.map((risk, idx) => (
-                                <li key={idx}>
-                                  <span className="risk-dot" />
-                                  <span>{risk}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
+                  <div className="summary-field-group">
+                    <span className="summary-small-label">BUDGET</span>
+                    <span className="summary-sub-val budget-highlight">
+                      {budget && Number(budget) > 0 ? `LKR ${Number(budget).toLocaleString()}` : "---"}
+                    </span>
+                  </div>
 
-                        {weatherAdvisory.suggestedAlternates && weatherAdvisory.suggestedAlternates.length > 0 && (
-                          <div className="weather-alternates-section">
-                            <div className="alternates-header">
-                              <h5>Recommended Favorable Alternatives for {weatherAdvisory.monthName}:</h5>
-                              <span className="alternates-hint">Better weather & active season during these dates</span>
-                            </div>
-                            <div className="weather-alternates-grid">
-                              {weatherAdvisory.suggestedAlternates.map((alt) => (
-                                <div key={alt.destination} className="alternate-card">
-                                  <div className="alt-card-body">
-                                    <div className="alt-title-row">
-                                      <strong>{alt.destination}</strong>
-                                      {alt.region && <span className="alt-region-tag">{alt.region}</span>}
-                                    </div>
-                                    <p className="alt-reason">{alt.reason}</p>
-                                    {alt.bestFor && <span className="alt-best-for">{alt.bestFor}</span>}
-                                  </div>
-                                  <button
-                                    type="button"
-                                    className="alt-switch-button"
-                                    onClick={() => handleSelectAlternateDestination(alt.destination)}
-                                    title={`Switch destination to ${alt.destination}`}
-                                  >
-                                    Switch to {alt.destination} →
-                                  </button>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        <div className={`advisory-ack-container ${advisoryAcknowledged ? "acknowledged" : "pending"}`}>
-                          <label className="advisory-ack-checkbox-label">
-                            <input
-                              type="checkbox"
-                              checked={advisoryAcknowledged}
-                              onChange={(e) => setAdvisoryAcknowledged(e.target.checked)}
-                            />
-                            <span>
-                              I acknowledge the weather advisory for {destination} in {weatherAdvisory.monthName} and choose to proceed with this itinerary.
-                            </span>
-                          </label>
-                          {!advisoryAcknowledged && (
-                            <span className="advisory-unlock-hint">Check this box to accept and unlock the Continue button</span>
-                          )}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="weather-advisory-box favorable">
-                        <div className="weather-advisory-header">
-                          <div className="weather-icon-badge favorable">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                              <polyline points="22 4 12 14.01 9 11.01" />
-                            </svg>
-                          </div>
-                          <div className="weather-title-wrap">
-                            <div className="weather-badge-row">
-                              <span className="weather-status-badge favorable">{weatherAdvisory.badge || "Favorable Weather"}</span>
-                              {weatherAdvisory.season && (
-                                <span className="weather-season-pill favorable">{weatherAdvisory.season}</span>
-                              )}
-                              <span className="weather-month-pill favorable">{weatherAdvisory.monthName}</span>
-                            </div>
-                            <h4 className="weather-headline">{weatherAdvisory.headline}</h4>
-                          </div>
-                        </div>
-                        <p className="weather-summary-text favorable">{weatherAdvisory.summary}</p>
-                      </div>
-                    )
-                  ) : null}
-                </div>
-              )}
+                  <button
+                    type="button"
+                    className="summary-generate-btn"
+                    onClick={handleContinueToHotels}
+                  >
+                    <span>GENERATE TRIP</span>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                      <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
+                  </button>
 
 
-              {/* Total Budget */}
-              <div className="form-group">
-                <label>Total Budget (LKR)</label>
-                <input
-                  type="number"
-                  placeholder="e.g. 75000"
-                  value={budget}
-                  onChange={(e) => setBudget(e.target.value)}
-                  required
-                />
-                {budget && Number(budget) > 0 && (
-                  <p className="budget-insight-hint">
-                    Suggested hotel budget (40%): <strong>LKR {targetHotelBudget.toLocaleString()}</strong> (~LKR {Math.round(targetHotelBudget / Math.max(1, calculateNights())).toLocaleString()} / night)
-                  </p>
-                )}
-              </div>
-
-              {/* Travel Group */}
-              <div className="form-group">
-                <label>Who are you travelling with?</label>
-                <div className="trip-type-options">
-                  {["Solo", "Couple", "Family", "Friends"].map((type) => (
-                    <button
-                      type="button"
-                      key={type}
-                      className={tripType === type ? "trip-type-button active" : "trip-type-button"}
-                      onClick={() => setTripType(type)}
-                    >
-                      {type}
-                    </button>
-                  ))}
                 </div>
               </div>
-
-              {/* Group Size */}
-              {(tripType === "Family" || tripType === "Friends") && (
-                <div className="form-group group-size-section">
-                  <label>
-                    {tripType === "Family" ? "Family Members Count" : "Friends Count"}
-                  </label>
-                  <input
-                    type="number"
-                    min="3"
-                    value={groupSize}
-                    onChange={(e) => setGroupSize(e.target.value)}
-                    required
-                  />
-                </div>
-              )}
-
-              <div className="wizard-actions step-1-actions">
-                <button
-                  className={`wizard-next-button ${weatherLoading ? "loading" : ""} ${weatherAdvisory?.hasAdvisory && !advisoryAcknowledged ? "faded-advisory" : ""}`}
-                  type="submit"
-                  disabled={
-                    weatherLoading ||
-                    !destination.trim() ||
-                    !startDate ||
-                    !endDate ||
-                    (weatherAdvisory?.hasAdvisory && !advisoryAcknowledged)
-                  }
-                  title={
-                    weatherLoading
-                      ? "Analyzing weather conditions, please wait..."
-                      : weatherAdvisory?.hasAdvisory && !advisoryAcknowledged
-                      ? "Accept the weather advisory above to unlock and continue"
-                      : "Continue to Hotels"
-                  }
-                >
-                  {weatherLoading ? (
-                    <>
-                      <span className="mini-spinner white"></span>
-                      <span>Checking Weather Advisory...</span>
-                    </>
-                  ) : weatherAdvisory?.hasAdvisory && !advisoryAcknowledged ? (
-                    "Accept Weather Advisory to Continue →"
-                  ) : (
-                    "Continue to Hotels →"
-                  )}
-                </button>
-              </div>
-            </form>
+            </div>
           </div>
         )}
 
         {/* ================= STEP 2: HOTEL RECOMMENDATIONS ================= */}
         {step === 2 && (
-          <div className="wizard-step-content">
-            <p className="planner-label">STEP 2 OF 3 • ACCOMMODATION</p>
-            <h1>Choose Your Stay in {destination}</h1>
-            <p className="planner-description">
-              Hotel recommendations matched to your <strong>LKR {Number(budget).toLocaleString()}</strong> budget for {nightsCount} night{nightsCount > 1 ? "s" : ""}.
-            </p>
+          <div className="wizard-step-content dark-theme-step">
+            <div className="dark-theme-header">
+              <button
+                type="button"
+                className="theme-back-btn"
+                onClick={() => setStep(1)}
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="19" y1="12" x2="5" y2="12"></line>
+                  <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+                <span>BACK</span>
+              </button>
+              <p className="dark-step-bullet-label">• STEP 2 OF 3 • ACCOMMODATION</p>
+              <h1 className="dark-main-title">
+                Choose Your Stay in <span className="dark-title-accent">{destination}</span>
+              </h1>
+              <p className="dark-main-desc">
+                Hotel recommendations matched to your <strong className="white-bold">LKR {Number(budget).toLocaleString()}</strong> budget for {nightsCount} night{nightsCount > 1 ? "s" : ""}.
+              </p>
+            </div>
 
             {/* Target accommodation budget banner */}
             <div className="hotel-budget-banner">
@@ -2086,20 +2123,12 @@ function PlanTrip() {
               ))}
             </div>
 
-            {/* Skeleton Loading State */}
+            {/* Activities Loading Card */}
             {activitiesLoading ? (
-              <div className="activities-grid">
-                {[1, 2, 3, 4, 5, 6].map((sk) => (
-                  <div key={sk} className="activity-selection-card activity-skeleton-card">
-                    <div className="activity-skeleton-img shimmer" />
-                    <div className="activity-skeleton-body">
-                      <div className="skeleton-line title shimmer" />
-                      <div className="skeleton-line text shimmer" />
-                      <div className="skeleton-line tip shimmer" />
-                      <div className="skeleton-line bottom shimmer" />
-                    </div>
-                  </div>
-                ))}
+              <div className="hotels-loading-card activities-transition-loading-card">
+                <div className="loading-spinner activities-transition-spinner"></div>
+                <h3>Loading activities in {destination}...</h3>
+                <p>Gathering the best experiences and attractions for your trip.</p>
               </div>
             ) : filteredActivities.length === 0 ? (
               <div className="empty-filter-notice">
@@ -2217,12 +2246,22 @@ function PlanTrip() {
               </button>
             </div>
 
+            {/* Itinerary Generation Loading */}
+            {itineraryLoading && (
+              <div className="hotels-loading-card itinerary-loading-card">
+                <div className="loading-spinner itinerary-spinner"></div>
+                <h3>Crafting your personalized itinerary...</h3>
+                <p>Building your {selectedActivities.length}-experience adventure in {destination}.</p>
+              </div>
+            )}
+
             {/* Wizard Navigation Buttons */}
             <div className="wizard-actions">
               <button
                 type="button"
                 className="wizard-back-button"
                 onClick={() => setStep(2)}
+                disabled={itineraryLoading}
               >
                 ← Back to Hotels
               </button>
@@ -2230,8 +2269,11 @@ function PlanTrip() {
                 type="button"
                 className="wizard-generate-button"
                 onClick={handleGenerateItinerary}
+                disabled={itineraryLoading}
               >
-                Generate My Personalized Itinerary ({selectedActivities.length} Experiences)
+                {itineraryLoading
+                  ? "Building Itinerary..."
+                  : `Generate My Personalized Itinerary (${selectedActivities.length} Experiences)`}
               </button>
             </div>
           </div>

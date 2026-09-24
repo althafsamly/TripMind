@@ -16,41 +16,40 @@ async function fetchFoodWithGemini({ destination, budget, exclude = [] }) {
     ? `CRITICAL EXCLUSION: Do NOT include any of the following eateries: ${excludeList.join(", ")}.\n`
     : "";
 
-  const prompt = `You are an expert Sri Lankan culinary guide, food critic, and local dining specialist.
-Generate exactly 3 or 4 real, authentic, well-known local food spots, legendary street food eateries, traditional rice & curry restaurants, or iconic dining spots in or immediately around "${destination}", Sri Lanka.
+  const prompt = `You are a Sri Lanka culinary expert and food critic with deep knowledge of real restaurants, eateries, and street food spots across every city and region in Sri Lanka.
+Generate exactly 3 or 4 REAL, authentic, well-known local food spots, famous street food eateries, traditional restaurants, or iconic dining spots that ACTUALLY EXIST in or immediately around "${destination}", Sri Lanka.
 
 ${excludeClause}Traveler Context:
 - Destination: ${destination}, Sri Lanka
-- Target Budget Context: ${budget ? `LKR ${budget}` : "Flexible"}
+- Budget Context: ${budget ? `LKR ${budget}` : "Flexible"}
 
 Requirements:
-- Only suggest real, authentic, popular places loved by locals and travelers (e.g., Dewmini Roti Shop in Mirissa, Matey Hut in Ella, Muslim Hotel in Kandy, Lucky Fort in Galle, Ministry of Crab in Colombo, etc.).
-- Include a variety of authentic dining styles:
-  - 1 traditional claypot rice & curry eatery
-  - 1 popular street food / kottu legend
-  - 1 fresh seafood grill or regional specialty spot
-  - 1 local tea lounge or viewpoint cafe
-- Accurate price range in Sri Lankan Rupees (LKR) e.g., "LKR 600 - 1,200", "LKR 1,500 - 3,000", "LKR 2,500 - 5,000".
-- Genuine ratings (between 4.5 and 4.9) and review counts.
-- Exact specialty dish description (e.g. "Famous cheese & avocado roti with devilled chicken", "Traditional 10-curry banana leaf buffet with dhal & pol sambol").
-- Specific street, landmark, or area in ${destination}.
-- 1-sentence tip on why to visit or best time to go.
+- Only suggest REAL, authentic places that genuinely exist in ${destination}, Sri Lanka and are loved by locals and travelers.
+- Include a variety:
+  - 1 traditional Sri Lankan rice & curry restaurant
+  - 1 popular street food or casual eatery
+  - 1 specialty dining spot (seafood, regional specialty)
+  - 1 local cafe or dessert spot
+- Prices in Sri Lankan Rupees (LKR), e.g. "LKR 300 - 800".
+- Genuine ratings (4.5–4.9) and realistic review counts.
+- Exact signature dish with a real description.
+- Specific street, landmark, or area in ${destination}, Sri Lanka.
 
-You MUST reply with ONLY a raw JSON array containing 3 or 4 objects. Do not include markdown codeblocks or other text.
+You MUST reply with ONLY a raw JSON array of 3 or 4 objects. No markdown, no explanation.
 
 JSON format:
 [
   {
     "id": "slug-string",
-    "name": "Exact Restaurant Name in ${destination}",
-    "type": "Rice & Curry" | "Roti & Kottu" | "Seafood Grill" | "Street Food Legend" | "Traditional Ceylon" | "Cafe & Bakery",
-    "icon": "🍛" | "🍲" | "🦀" | "🥘" | "☕",
+    "name": "Exact Real Restaurant Name",
+    "type": "Traditional Restaurant" | "Street Food" | "Seafood" | "Cafe & Bakery" | "Fine Dining" | "Local Eatery",
+    "icon": "🍛" | "🍲" | "🦞" | "☕",
     "specialty": "Exact signature dish description",
-    "priceRange": "LKR 800 - 1,500",
+    "priceRange": "LKR 300 - 800",
     "rating": 4.8,
     "reviews": 320,
     "badge": "Must-Try Legend" | "Top Rated" | "Hidden Gem" | "Local Favorite" | "Best Value",
-    "location": "Street, area, or landmark in ${destination}",
+    "location": "Street, area, or landmark in ${destination}, Sri Lanka",
     "whyVisit": "1-sentence tip on why it is special or best time to visit."
   }
 ]`;
@@ -60,8 +59,10 @@ JSON format:
       process.env.GEMINI_MODEL,
       "gemini-3.6-flash",
       "gemini-3.5-flash-lite",
-      "gemini-3.7-flash",
       "gemini-3.5-flash",
+      "gemini-3.7-flash",
+      "gemini-3.8-flash",
+      "gemini-flash-latest",
     ].filter(Boolean)),
   ];
 
@@ -84,7 +85,7 @@ JSON format:
             responseMimeType: "application/json",
           },
         }),
-        signal: AbortSignal.timeout(20000),
+        signal: AbortSignal.timeout(7000),
       });
 
       if (response.ok) {
@@ -94,14 +95,9 @@ JSON format:
       }
 
       const errorText = await response.text();
-      lastError = new Error(`Model ${model} failed (${response.status}): ${errorText}`);
-
-      if ([503, 429, 500, 404].includes(response.status) || errorText.includes("demand") || errorText.includes("not found")) {
-        console.warn(`[GeminiFoodService] Model ${model} returned ${response.status}. Trying next candidate model...`);
-        continue;
-      } else {
-        throw lastError;
-      }
+      lastError = new Error(`Model ${model} failed (${response.status}): ${errorText.slice(0, 200)}`);
+      console.warn(`[GeminiFoodService] Model ${model} returned ${response.status}. Trying next candidate model...`);
+      continue;
     } catch (e) {
       lastError = e;
       console.warn(`[GeminiFoodService] Model ${model} failed (${e.message}). Trying next candidate model...`);
@@ -139,7 +135,7 @@ JSON format:
       badge: food.badge || "Local Favorite",
       location: food.location || `Central ${destination}`,
       whyVisit: food.whyVisit || "A celebrated culinary stop offering fresh, authentic Sri Lankan flavor.",
-      googleMapsUrl: `https://www.google.com/maps/search/${encodeURIComponent(`${name} ${destination} Sri Lanka`)}`,
+      googleMapsUrl: `https://www.google.com/maps/search/${encodeURIComponent(`${name} ${destination}`)}`,
       source: "gemini",
     };
   });

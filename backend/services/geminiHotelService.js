@@ -20,52 +20,54 @@ async function fetchHotelsWithGemini({ destination, budget = 75000, nights = 3, 
     ? `CRITICAL EXCLUSION: Do NOT include any of the following hotels (they are already displayed to the user): ${excludeList.join(", ")}. Suggest 4 DIFFERENT authentic hotels or guesthouses in ${destination}.\n`
     : "";
 
-  const prompt = `You are an expert Sri Lankan travel guide and hotel concierge.
-Generate exactly 4 real, well-known, authentic hotels, boutique resorts, or guesthouses in or immediately around "${destination}", Sri Lanka.
+  const prompt = `You are a Sri Lanka travel expert and hotel specialist with deep knowledge of real accommodations across every city and region in Sri Lanka.
+Generate exactly 4 REAL, genuine, well-known hotels, boutique resorts, guesthouses, or lodges that ACTUALLY EXIST in or immediately around "${destination}", Sri Lanka.
 
 ${excludeClause}User Context:
 - Destination: ${destination}, Sri Lanka
 - Total Trip Budget: LKR ${budget}
 - Stay Duration: ${nights} nights
-- Target Nightly Accommodation Budget: ~LKR ${targetNightlyBudget} / night
+- Target Nightly Accommodation Budget: ~LKR ${targetNightlyBudget} per night
 - Travelers: ${travelers} (${tripType})
 
 Requirements:
-- Recommend 4 real accommodations spanning different tiers:
-  - 1 Luxury (high-end resort or 5-star hotel)
-  - 2 Comfort / Boutique (stylish 3-4 star hotels or popular boutique villas)
-  - 1 Budget (clean, highly-rated guesthouse or backpacker stay)
-- All prices must be realistic nightly rates in Sri Lankan Rupees (LKR).
-- Include genuine ratings (between 4.2 and 4.9) and 4-6 typical amenities.
-- Include a specific room type and location highlight (e.g. proximity to landmarks).
+- Every hotel MUST be a REAL place that genuinely exists in ${destination}, Sri Lanka. Do NOT make up or invent hotel names.
+- Span different price tiers:
+  - 1 Luxury (5-star or high-end resort)
+  - 2 Comfort / Boutique (popular 3-4 star or boutique guesthouses)
+  - 1 Budget (clean, well-rated guesthouse or hostel)
+- Prices in Sri Lankan Rupees (LKR).
+- Include genuine ratings (4.2–4.9) and realistic review counts.
+- Include specific amenities, room type, and proximity to landmarks in ${destination}.
 
-You MUST reply with ONLY a raw JSON array containing exactly 4 objects. Do not include markdown codeblocks, do not include explanations.
+You MUST reply with ONLY a raw JSON array of exactly 4 objects. No markdown, no explanation.
 
 JSON format:
 [
   {
     "id": "unique-slug-string",
-    "name": "Exact Hotel Name",
+    "name": "Exact Real Hotel Name",
     "tier": "Luxury" | "Comfort" | "Budget",
     "pricePerNight": 25000,
     "rating": 4.7,
     "reviews": 320,
-    "amenities": ["Infinity Pool", "Free Breakfast", "Mountain View", "WiFi"],
+    "amenities": ["Pool", "Free Breakfast", "WiFi", "AC"],
     "badge": "AI Top Pick" | "Best Value" | "Eco Luxury" | "Budget Friendly",
     "icon": "🏰" | "🏨" | "🏡" | "🛏️",
-    "description": "2-sentence engaging summary of location and highlights in ${destination}.",
-    "locationHighlights": "Short sentence on location convenience e.g. 5 minutes from Ella town center.",
-    "roomType": "Standard / Deluxe Room with Private Balcony"
+    "description": "2-sentence description of the real hotel and what makes it special in ${destination}.",
+    "locationHighlights": "Specific location detail e.g. 5 min from city center or near a named landmark.",
+    "roomType": "Deluxe Room / Standard Suite"
   }
 ]`;
-
   const candidateModels = [
     ...new Set([
       process.env.GEMINI_MODEL,
       "gemini-3.6-flash",
       "gemini-3.5-flash-lite",
-      "gemini-3.7-flash",
       "gemini-3.5-flash",
+      "gemini-3.7-flash",
+      "gemini-3.8-flash",
+      "gemini-flash-latest",
     ].filter(Boolean)),
   ];
 
@@ -88,11 +90,11 @@ JSON format:
             },
           ],
           generationConfig: {
-            temperature: 0.4,
+            temperature: 0.2,
             responseMimeType: "application/json",
           },
         }),
-        signal: AbortSignal.timeout(20000),
+        signal: AbortSignal.timeout(7000),
       });
 
       if (response.ok) {
@@ -102,15 +104,9 @@ JSON format:
       }
 
       const errorText = await response.text();
-      lastError = new Error(`Model ${model} failed (${response.status}): ${errorText}`);
-
-      // If temporary overload (503), rate limit (429), server error (500), or not found (404), try next model
-      if ([503, 429, 500, 404].includes(response.status) || errorText.includes("demand") || errorText.includes("not found")) {
-        console.warn(`[GeminiHotelService] Model ${model} returned ${response.status}. Trying next candidate model...`);
-        continue;
-      } else {
-        throw lastError;
-      }
+      lastError = new Error(`Model ${model} failed (${response.status}): ${errorText.slice(0, 200)}`);
+      console.warn(`[GeminiHotelService] Model ${model} returned ${response.status}. Trying next candidate model...`);
+      continue;
     } catch (e) {
       lastError = e;
       console.warn(`[GeminiHotelService] Model ${model} failed (${e.message}). Trying next candidate model...`);

@@ -1,0 +1,258 @@
+/* Weather Advisory Container Styling */
+.weather-alert-section {
+  margin-top: 24px;
+}
+
+.weather-alert-card {
+  background: linear-gradient(180deg, #16181d 0%, #121316 100%);
+  border: 1px solid rgba(245, 158, 11, 0.45);
+  border-left: 3px solid #f59e0b;
+  border-radius: 14px;
+  padding: 24px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: #e2e8f0;
+}
+
+/* Header Row */
+.weather-alert-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.weather-alert-icon {
+  background-color: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  color: #fbbf24;
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.weather-alert-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.badge-precaution {
+  background-color: rgba(245, 158, 11, 0.18);
+  color: #fcd34d;
+  border: 1px solid rgba(245, 158, 11, 0.5);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 20px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.badge-period,
+.badge-month {
+  background-color: #21242c;
+  border: 1px solid #333742;
+  color: #e2e8f0;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 20px;
+}
+
+.badge-live-weather {
+  background-color: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  color: #93c5fd;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 20px;
+}
+
+/* Advisory Main Title */
+.weather-alert-title {
+  font-size: 21px;
+  font-weight: 700;
+  color: #fbbf24; /* Golden text as in screenshot */
+  margin: 0 0 14px 0;
+  line-height: 1.35;
+}
+
+.weather-alert-desc {
+  font-size: 14.5px;
+  line-height: 1.65;
+  color: #cbd5e1;
+  margin: 0 0 20px 0;
+}
+
+/* Noted Weather Factors */
+.weather-factors {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 18px;
+  margin-bottom: 24px;
+}
+
+.factors-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: #fbbf24;
+  letter-spacing: 0.8px;
+  margin: 0 0 12px 0;
+  text-transform: uppercase;
+}
+
+.factors-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.factors-list li {
+  position: relative;
+  padding-left: 18px;
+  margin-bottom: 10px;
+  font-size: 14px;
+  color: #cbd5e1;
+  line-height: 1.5;
+}
+
+.factors-list li::before {
+  content: "•";
+  position: absolute;
+  left: 2px;
+  color: #f59e0b;
+  font-size: 16px;
+  top: -1px;
+}
+
+/* Recommended Favorable Alternatives Section */
+.weather-alternatives {
+  background-color: #181a20;
+  border: 1px solid #282b34;
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.alternatives-header {
+  margin-bottom: 18px;
+}
+
+.alternatives-header h4 {
+  font-size: 15.5px;
+  font-weight: 700;
+  color: #f8fafc;
+  margin: 0 0 4px 0;
+}
+
+.alternatives-header p {
+  font-size: 13px;
+  color: #94a3b8;
+  margin: 0;
+}
+
+.alternatives-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+@media (max-width: 768px) {
+  .alternatives-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.alternative-card {
+  background-color: #21242d;
+  border: 1px solid #333742;
+  border-radius: 12px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+}
+
+.alt-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.alt-card-header h5 {
+  font-size: 17px;
+  font-weight: 700;
+  color: #f8fafc;
+  margin: 0;
+}
+
+.alt-region {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 12px;
+}
+
+.alt-region.blue {
+  background-color: rgba(59, 130, 246, 0.15);
+  color: #93c5fd;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.alt-region.purple {
+  background-color: rgba(168, 85, 247, 0.15);
+  color: #c084fc;
+  border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+.alt-region.amber {
+  background-color: rgba(245, 158, 11, 0.15);
+  color: #fcd34d;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.alternative-card p {
+  font-size: 13px;
+  color: #94a3b8;
+  line-height: 1.5;
+  margin: 0 0 14px 0;
+  flex-grow: 1;
+}
+
+.alt-theme {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+
+.alt-theme.green {
+  color: #34d399;
+}
+
+.alt-theme.teal {
+  color: #2dd4bf;
+}
+
+.alt-switch-btn {
+  background-color: #3b82f6;
+  color: #ffffff;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  align-self: flex-start;
+}
+
+.alt-switch-btn:hover {
+  background-color: #2563eb;
+  transform: translateY(-1px);
+}

@@ -1,7 +1,14 @@
+/* ==========================================================================
+   My Trips Page - Modern Obsidian Dark UI Theme
+   Matching the PlanTrip / TripResult dark theme
+   ========================================================================== */
+
 .my-trips-page {
   min-height: calc(100vh - 72px);
-  background: #f8f9fd;
-  padding: 60px 7%;
+  background: #000000;
+  padding: 60px 7% 90px;
+  font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #f1f5f9;
 }
 
 .my-trips-container {
@@ -9,53 +16,74 @@
   margin: 0 auto;
 }
 
+/* ================= HEADER ================= */
 .my-trips-header {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  margin-bottom: 40px;
+  margin-bottom: 44px;
+  padding-bottom: 36px;
+  border-bottom: 1px solid #111318;
 }
 
 .page-label {
-  color: #4f46e5;
+  color: #818cf8;
   font-weight: 700;
-  font-size: 13px;
-  letter-spacing: 1.5px;
-  margin-bottom: 8px;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
 }
 
 .my-trips-header h1 {
-  font-size: 42px;
-  margin: 0 0 10px;
-  color: #141421;
+  font-size: 44px;
+  font-weight: 800;
+  margin: 0 0 8px;
+  color: #f1f5f9;
+  letter-spacing: -1px;
 }
 
 .my-trips-header > div > p:last-child {
-  color: #70707c;
+  color: #64748b;
   margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
 }
 
 .new-trip-button {
   text-decoration: none;
   background: #4f46e5;
   color: white;
-  padding: 13px 20px;
+  padding: 12px 22px;
   border-radius: 10px;
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 16px rgba(79, 70, 229, 0.3);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
+.new-trip-button:hover {
+  background: #4338ca;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(79, 70, 229, 0.5);
+}
+
+/* ================= TRIPS GRID ================= */
 .trips-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
+  gap: 20px;
 }
 
+/* ================= TRIP CARD ================= */
 .saved-trip-card {
-  background: white;
+  background: #090a0d;
+  border: 1px solid #161821;
   border-radius: 18px;
   overflow: hidden;
-  box-shadow: 0 10px 30px rgba(20, 20, 40, 0.07);
-  transition: all 0.25s ease;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   cursor: pointer;
   outline: none;
 }
@@ -63,20 +91,22 @@
 .saved-trip-card:hover,
 .saved-trip-card:focus-visible {
   transform: translateY(-6px);
-  box-shadow: 0 20px 40px rgba(20, 20, 40, 0.14);
+  box-shadow: 0 24px 50px rgba(0, 0, 0, 0.6);
+  border-color: #232530;
 }
 
 .saved-trip-card:focus-visible {
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.4), 0 20px 40px rgba(20, 20, 40, 0.14);
+  box-shadow: 0 0 0 2px rgba(129, 140, 248, 0.5), 0 24px 50px rgba(0, 0, 0, 0.6);
 }
 
 .saved-trip-card:active {
   transform: translateY(-2px);
 }
 
+/* ================= CARD IMAGE ================= */
 .saved-trip-image {
-  height: 200px;
-  background: #1e1b4b;
+  height: 196px;
+  background: #0f172a;
   position: relative;
   overflow: hidden;
 }
@@ -87,7 +117,7 @@
   gap: 2px;
   width: 100%;
   height: 100%;
-  background: #0f172a;
+  background: #000000;
 }
 
 .saved-trip-photo-pane {
@@ -101,11 +131,13 @@
   height: 100%;
   object-fit: cover;
   display: block;
-  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.55s cubic-bezier(0.16, 1, 0.3, 1);
+  filter: brightness(0.75) saturate(0.8);
 }
 
 .saved-trip-card:hover .saved-trip-photo-pane img {
-  transform: scale(1.1);
+  transform: scale(1.08);
+  filter: brightness(0.85) saturate(0.9);
 }
 
 .saved-trip-destination-photo {
@@ -114,6 +146,7 @@
   object-fit: cover;
   display: block;
   transition: transform 0.4s ease;
+  filter: brightness(0.75);
 }
 
 .saved-trip-card:hover .saved-trip-destination-photo {
@@ -125,8 +158,8 @@
   inset: 0;
   background: linear-gradient(
     to top,
-    rgba(15, 23, 42, 0.75) 0%,
-    rgba(15, 23, 42, 0.1) 60%,
+    rgba(0, 0, 0, 0.78) 0%,
+    rgba(0, 0, 0, 0.1) 60%,
     transparent 100%
   );
   pointer-events: none;
@@ -134,74 +167,81 @@
 
 .trip-days-badge {
   position: absolute;
-  top: 14px;
-  right: 14px;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  color: #1e1b4b;
-  padding: 6px 12px;
+  top: 12px;
+  right: 12px;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #e2e8f0;
+  padding: 5px 11px;
   border-radius: 999px;
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 700;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
   z-index: 2;
 }
 
 .trip-hotel-pill {
   position: absolute;
-  bottom: 12px;
-  left: 14px;
-  right: 14px;
-  background: rgba(15, 23, 42, 0.75);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  color: white;
-  padding: 5px 10px;
+  bottom: 10px;
+  left: 12px;
+  right: 12px;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #cbd5e1;
+  padding: 4px 10px;
   border-radius: 8px;
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   z-index: 2;
 }
 
+/* ================= CARD CONTENT ================= */
 .saved-trip-content {
-  padding: 24px;
+  padding: 22px 22px 20px;
 }
 
 .trip-date {
-  font-size: 13px;
-  color: #92929d;
+  font-size: 12px;
+  color: #475569;
   margin: 0 0 6px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
 }
 
 .saved-trip-content h2 {
-  margin: 0 0 4px;
-  font-size: 23px;
-  color: #1b1b26;
+  margin: 0 0 5px;
+  font-size: 21px;
+  font-weight: 800;
+  color: #f1f5f9;
+  letter-spacing: -0.3px;
 }
 
 .trip-hotel-info {
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
-  color: #4f46e5;
+  color: #818cf8;
   margin: 0 0 8px;
 }
 
 .trip-interests {
-  color: #6d6d78;
-  min-height: 36px;
-  font-size: 13px;
+  color: #475569;
+  min-height: 34px;
+  font-size: 12.5px;
+  line-height: 1.55;
 }
 
+/* ================= CARD FOOTER ================= */
 .saved-trip-footer {
-  border-top: 1px solid #eeeeF3;
-  padding-top: 18px;
-  margin-top: 20px;
+  border-top: 1px solid #111318;
+  padding-top: 16px;
+  margin-top: 18px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -213,28 +253,35 @@
 }
 
 .budget-label {
-  color: #92929d;
-  font-size: 12px;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
   margin-bottom: 3px;
 }
 
 .saved-trip-footer strong {
-  font-size: 18px;
+  font-size: 17px;
+  color: #e2e8f0;
+  font-weight: 700;
 }
 
 .view-trip-button {
   background: transparent;
-  color: #4f46e5;
+  color: #818cf8;
   border: none;
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 13.5px;
   cursor: pointer;
   transition: all 0.2s ease;
   display: inline-flex;
   align-items: center;
+  padding: 0;
 }
 
 .saved-trip-card:hover .view-trip-button {
-  color: #3730a3;
+  color: #a5b4fc;
   transform: translateX(4px);
 }
 
@@ -248,59 +295,64 @@
   background: transparent;
   border: none;
   cursor: pointer;
-  font-size: 16px;
-  padding: 4px 6px;
-  border-radius: 6px;
+  color: #475569;
+  padding: 5px 7px;
+  border-radius: 7px;
   transition: all 0.2s;
-  opacity: 0.7;
+  display: inline-flex;
+  align-items: center;
 }
 
 .delete-trip-button:hover {
-  opacity: 1;
-  background: #fee2e2;
+  color: #f87171;
+  background: rgba(239, 68, 68, 0.1);
+  border-color: transparent;
 }
 
+/* ================= STATE CARD (empty / login / error) ================= */
 .my-trips-state-card {
-  background: white;
+  background: #090a0d;
+  border: 1px solid #161821;
   border-radius: 20px;
-  padding: 60px 30px;
+  padding: 70px 34px;
   text-align: center;
-  box-shadow: 0 10px 30px rgba(20, 20, 40, 0.05);
-  max-width: 540px;
-  margin: 40px auto;
+  max-width: 520px;
+  margin: 50px auto;
 }
 
 .state-badge-pill {
   display: inline-block;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 800;
-  letter-spacing: 1px;
+  letter-spacing: 1.5px;
   text-transform: uppercase;
-  color: #4f46e5;
-  background: #eef2ff;
-  border: 1px solid #c7d2fe;
-  padding: 4px 12px;
+  color: #818cf8;
+  background: rgba(129, 140, 248, 0.1);
+  border: 1px solid rgba(129, 140, 248, 0.25);
+  padding: 4px 13px;
   border-radius: 999px;
   margin-bottom: 20px;
 }
 
 .state-badge-pill.error {
-  color: #dc2626;
-  background: #fef2f2;
-  border-color: #fecaca;
+  color: #f87171;
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.3);
 }
 
 .my-trips-state-card h2 {
   font-size: 24px;
-  color: #1b1b26;
+  font-weight: 800;
+  color: #e2e8f0;
   margin-bottom: 10px;
+  letter-spacing: -0.3px;
 }
 
 .my-trips-state-card p {
-  color: #6d6d78;
+  color: #64748b;
   font-size: 15px;
-  margin-bottom: 24px;
-  line-height: 1.5;
+  margin-bottom: 28px;
+  line-height: 1.6;
 }
 
 .state-actions {
@@ -309,45 +361,56 @@
   gap: 14px;
 }
 
+/* ================= BUTTONS ================= */
 .primary-button {
   background: #4f46e5;
   color: white;
   text-decoration: none;
   padding: 12px 24px;
   border-radius: 10px;
-  font-weight: 600;
+  font-weight: 700;
+  font-size: 14px;
   border: none;
   cursor: pointer;
   display: inline-block;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.3);
 }
 
 .primary-button:hover {
   background: #4338ca;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 22px rgba(79, 70, 229, 0.45);
 }
 
 .secondary-button-outline {
   background: transparent;
-  color: #4f46e5;
+  color: #818cf8;
   text-decoration: none;
   padding: 12px 24px;
   border-radius: 10px;
-  font-weight: 600;
-  border: 1.5px solid #4f46e5;
+  font-weight: 700;
+  font-size: 14px;
+  border: 1.5px solid rgba(129, 140, 248, 0.35);
   display: inline-block;
+  transition: all 0.2s ease;
 }
 
 .secondary-button-outline:hover {
-  background: #f5f4ff;
+  background: rgba(129, 140, 248, 0.08);
+  border-color: rgba(129, 140, 248, 0.6);
+  color: #a5b4fc;
 }
 
+/* ================= LOADING SPINNER ================= */
 .loading-spinner {
-  width: 44px;
-  height: 44px;
-  border: 4px solid #e2e8f0;
-  border-top-color: #4f46e5;
+  width: 42px;
+  height: 42px;
+  border: 3px solid #161821;
+  border-top-color: #818cf8;
   border-radius: 50%;
   animation: spin 0.9s linear infinite;
-  margin: 0 auto 16px;
+  margin: 0 auto 18px;
 }
 
 @keyframes spin {
@@ -356,6 +419,7 @@
   }
 }
 
+/* ================= RESPONSIVE ================= */
 @media (max-width: 900px) {
   .trips-grid {
     grid-template-columns: 1fr 1fr;
@@ -363,6 +427,10 @@
 }
 
 @media (max-width: 600px) {
+  .my-trips-page {
+    padding: 40px 20px 70px;
+  }
+
   .trips-grid {
     grid-template-columns: 1fr;
   }
@@ -371,5 +439,15 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 20px;
+  }
+
+  .my-trips-header h1 {
+    font-size: 34px;
+  }
+
+  .new-trip-button {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
   }
 }

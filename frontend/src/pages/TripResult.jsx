@@ -507,6 +507,7 @@ function TripResult() {
   const [saveStatus, setSaveStatus] = useState("idle");
   const [saveMessage, setSaveMessage] = useState("");
   const [isSosModalOpen, setIsSosModalOpen] = useState(false);
+  const [isSosDropdownOpen, setIsSosDropdownOpen] = useState(false);
 
   async function handleSaveTrip() {
     const token = localStorage.getItem("token");
@@ -573,7 +574,81 @@ function TripResult() {
       <div className="result-container">
         <section className="result-hero">
           <p className="result-label">YOUR CUSTOM AI TRIP PLAN</p>
-          <h1>{trip.destination}</h1>
+
+          {/* Destination title + inline SOS button */}
+          <div className="result-title-row">
+            <h1>{trip.destination}</h1>
+            <div className="inline-sos-wrap">
+              <button
+                type="button"
+                className="inline-sos-btn"
+                onClick={() => setIsSosDropdownOpen(!isSosDropdownOpen)}
+              >
+                <span>🚨</span>
+                <span>Emergency SOS</span>
+                <span className={`inline-sos-chevron ${isSosDropdownOpen ? "open" : ""}`}>▾</span>
+              </button>
+
+              {/* Simple dropdown list */}
+              {isSosDropdownOpen && (
+                <div className="sos-dropdown">
+                  <div className="sos-dropdown-header">
+                    <span>🚨 Emergency Contacts</span>
+                    <button
+                      type="button"
+                      className="sos-dropdown-close"
+                      onClick={() => setIsSosDropdownOpen(false)}
+                    >✕</button>
+                  </div>
+
+                  <a href="tel:1990" className="sos-dropdown-item">
+                    <span className="sos-di-icon">🚑</span>
+                    <div className="sos-di-info">
+                      <strong>Ambulance</strong>
+                      <span>Suwa Seriya — 1990</span>
+                    </div>
+                    <span className="sos-di-number">1990</span>
+                  </a>
+
+                  <a href="tel:119" className="sos-dropdown-item">
+                    <span className="sos-di-icon">🛡️</span>
+                    <div className="sos-di-info">
+                      <strong>Police</strong>
+                      <span>Emergency — 119</span>
+                    </div>
+                    <span className="sos-di-number">119</span>
+                  </a>
+
+                  <a href="tel:110" className="sos-dropdown-item">
+                    <span className="sos-di-icon">🔥</span>
+                    <div className="sos-di-info">
+                      <strong>Fire & Rescue</strong>
+                      <span>Island-wide — 110</span>
+                    </div>
+                    <span className="sos-di-number">110</span>
+                  </a>
+
+                  <a href="tel:1912" className="sos-dropdown-item">
+                    <span className="sos-di-icon">📞</span>
+                    <div className="sos-di-info">
+                      <strong>Tourist Hotline</strong>
+                      <span>24/7 Support — 1912</span>
+                    </div>
+                    <span className="sos-di-number">1912</span>
+                  </a>
+
+                  <button
+                    type="button"
+                    className="sos-dropdown-full-btn"
+                    onClick={() => { setIsSosModalOpen(true); setIsSosDropdownOpen(false); }}
+                  >
+                    🏥 Open Full Emergency Centre
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
           <p className="result-subtitle">
             A personalized {trip.days}-day Sri Lankan adventure curated with your chosen hotel and experiences.
           </p>
@@ -1071,17 +1146,7 @@ function TripResult() {
         </div>
       </div>
 
-      {/* Floating SOS Trigger Button */}
-      <button
-        type="button"
-        className="floating-sos-trigger"
-        onClick={() => setIsSosModalOpen(true)}
-        title="Open Emergency SOS"
-      >
-        <span className="floating-sos-pulse" />
-        <span className="floating-sos-icon">🚨</span>
-        <span className="floating-sos-text">EMERGENCY SOS</span>
-      </button>
+      {/* Floating SOS button removed — now inline with title */}
 
       {/* Emergency SOS Modal (faithfully matching reference UI) */}
       <EmergencySOSModal
