@@ -65,109 +65,7 @@ function PlanTrip() {
   const [speechSupported, setSpeechSupported] = useState(true);
 
   const recognitionRef = useRef(null);
-  const voiceTranscriptRef = useRef("");
   const abortControllerRef = useRef(null);
-
-  // Weather & Seasonal Advisory States
-  const [weatherLoading, setWeatherLoading] = useState(false);
-  const [weatherAdvisory, setWeatherAdvisory] = useState(null);
-  const [weatherError, setWeatherError] = useState("");
-  const [advisoryAcknowledged, setAdvisoryAcknowledged] = useState(false);
-  const weatherAbortRef = useRef(null);
-
-  // Helper to convert date string (YYYY-MM-DD) month number to full English Month Name
-  function getMonthNameFromDate(dateStr) {
-    if (!dateStr) return "";
-    const parts = String(dateStr).trim().split("-");
-    if (parts.length >= 2) {
-      const monthNum = parseInt(parts[1], 10);
-      const months = [
-        "January", "February", "March", "April", "May", "June",
-        "July", "August", "September", "October", "November", "December"
-      ];
-      if (monthNum >= 1 && monthNum <= 12) {
-        return months[monthNum - 1];
-      }
-    }
-    return "";
-  }
-
-  // Trigger weather, monsoon & seasonal disaster advisory when destination AND dates are set
-  useEffect(() => {
-    const trimmedDest = (destination || "").trim();
-    if (!trimmedDest || trimmedDest.length < 3 || !startDate || !endDate) {
-      setWeatherAdvisory(null);
-      setWeatherLoading(false);
-      setAdvisoryAcknowledged(false);
-      return;
-    }
-
-    if (weatherAbortRef.current) {
-      weatherAbortRef.current.abort();
-    }
-    const controller = new AbortController();
-    weatherAbortRef.current = controller;
-
-    setWeatherLoading(true);
-    setWeatherError("");
-    setAdvisoryAcknowledged(false);
-
-    // Convert date month number into month name before passing to Gemini weather advisory
-    const startMonth = getMonthNameFromDate(startDate);
-    const endMonth = getMonthNameFromDate(endDate);
-    const monthName = startMonth === endMonth ? startMonth : `${startMonth} to ${endMonth}`;
-
-    const timer = setTimeout(async () => {
-      try {
-        const response = await fetch("http://localhost:5000/api/trips/weather-advisory", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          signal: controller.signal,
-          body: JSON.stringify({
-            destination: trimmedDest,
-            startDate,
-            endDate,
-            startMonth,
-            endMonth,
-            monthName,
-          }),
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          if (data?.success && data?.advisory) {
-            setWeatherAdvisory(data.advisory);
-          }
-        } else {
-          throw new Error("Weather advisory returned status " + response.status);
-        }
-      } catch (err) {
-        if (err.name !== "AbortError") {
-          console.warn("Weather advisory fetch error:", err);
-          setWeatherError("Weather advisory service is currently unavailable.");
-        }
-      } finally {
-        if (weatherAbortRef.current === controller) {
-          setWeatherLoading(false);
-        }
-      }
-    }, 450);
-
-    return () => {
-      clearTimeout(timer);
-      controller.abort();
-    };
-  }, [destination, startDate, endDate]);
-
-  function handleSelectAlternateDestination(altDest) {
-    if (!altDest) return;
-    setDestination(altDest);
-    setSelectedHotel(null);
-    setSelectedActivities([]);
-    setHotels([]);
-    setActivities([]);
-    setAdvisoryAcknowledged(false);
-  }
 
   const navigate = useNavigate();
 
@@ -224,7 +122,6 @@ function PlanTrip() {
     stopSpeaking();
 
     // 4. Reset voice state to idle with explicit user feedback
-    voiceTranscriptRef.current = "";
     setVoiceState("idle");
     setTranscriptText("Voice AI stopped. Tap to speak or type your plan.");
   }
@@ -428,28 +325,6 @@ function PlanTrip() {
     }
   }
 
-  // Complete voice listening immediately and process whatever has been captured so far
-  function handleCompleteVoiceListening() {
-    const textToProcess = (voiceTranscriptRef.current || "").trim();
-
-    if (recognitionRef.current) {
-      try {
-        recognitionRef.current.onend = null; // Prevent duplicate invocation from onend
-        recognitionRef.current.stop();
-      } catch (e) {
-        console.warn("Speech recognition stop error:", e);
-      }
-      recognitionRef.current = null;
-    }
-
-    if (textToProcess.length >= 3) {
-      handleProcessVoiceTranscript(textToProcess);
-    } else {
-      setVoiceState("idle");
-      setTranscriptText("No speech was detected. Tap to try again or type your plan.");
-    }
-  }
-
   // Interactive Voice Recording handler with live SpeechRecognition
   function handleToggleVoiceListening() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -462,20 +337,22 @@ function PlanTrip() {
       return;
     }
 
-    // If currently listening, tapping the button immediately completes voice capture and processes
     if (voiceState === "listening") {
-      handleCompleteVoiceListening();
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
       return;
     }
 
     try {
       const recognition = new SpeechRecognition();
       recognition.lang = "en-US";
-      recognition.continuous = true;
+      recognition.continuous = false;
       recognition.interimResults = true;
       recognition.maxAlternatives = 1;
       recognitionRef.current = recognition;
-      voiceTranscriptRef.current = "";
+
+      let capturedText = "";
 
       recognition.onstart = () => {
         setVoiceState("listening");
@@ -483,22 +360,24 @@ function PlanTrip() {
       };
 
       recognition.onresult = (event) => {
-        let fullTranscript = "";
-        for (let i = 0; i < event.results.length; i++) {
-          fullTranscript += event.results[i][0].transcript;
+        let interim = "";
+        let final = "";
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            final += event.results[i][0].transcript;
+          } else {
+            interim += event.results[i][0].transcript;
+          }
         }
-        const cleanText = fullTranscript.trim();
-        voiceTranscriptRef.current = cleanText;
-        setTranscriptText(cleanText ? `"${cleanText}"` : "Listening...");
+        capturedText = final || interim;
+        setTranscriptText(capturedText ? `"${capturedText}"` : "Listening...");
       };
 
       recognition.onerror = (event) => {
         console.warn("Speech recognition error:", event.error);
         if (event.error === "no-speech") {
-          if (!voiceTranscriptRef.current || !voiceTranscriptRef.current.trim()) {
-            setVoiceState("idle");
-            setTranscriptText("No speech was detected. Tap to try again.");
-          }
+          setVoiceState("idle");
+          setTranscriptText("No speech was detected. Tap to try again.");
         } else if (event.error === "not-allowed") {
           setVoiceState("error");
           setTranscriptText("Microphone access was denied. Please check your browser permissions or type your plan.");
@@ -509,11 +388,9 @@ function PlanTrip() {
       };
 
       recognition.onend = () => {
-        recognitionRef.current = null;
-        const textToProcess = (voiceTranscriptRef.current || "").trim();
-        if (textToProcess.length >= 3) {
-          handleProcessVoiceTranscript(textToProcess);
-        } else {
+        if (capturedText && capturedText.trim().length > 3) {
+          handleProcessVoiceTranscript(capturedText.trim());
+        } else if (voiceState === "listening") {
           setVoiceState("idle");
         }
       };
@@ -788,10 +665,6 @@ function PlanTrip() {
   // Step 1 Validation & Proceed
   function handleContinueToHotels(e) {
     e.preventDefault();
-    if (weatherLoading) {
-      alert("Please wait while we finish analyzing weather and seasonal advisories for your destination.");
-      return;
-    }
     if (!destination.trim()) {
       alert("Please enter a destination in Sri Lanka.");
       return;
@@ -802,10 +675,6 @@ function PlanTrip() {
     }
     if (!budget || Number(budget) <= 0) {
       alert("Please enter a valid travel budget.");
-      return;
-    }
-    if (weatherAdvisory?.hasAdvisory && !advisoryAcknowledged) {
-      alert(`Please review the weather advisory for ${destination} before proceeding, or select one of the suggested alternate destinations.`);
       return;
     }
 
@@ -1438,134 +1307,6 @@ function PlanTrip() {
                 </div>
               </div>
 
-              {/* Weather, Monsoon & Natural Disaster Advisory */}
-              {destination.trim() && startDate && endDate && (
-                <div className="weather-advisory-container">
-                  {weatherLoading ? (
-                    <div className="weather-advisory-box loading" role="status" aria-live="polite">
-                      <div className="weather-spinner-wrapper">
-                        <div className="weather-spinner" />
-                      </div>
-                      <div className="weather-loading-text">
-                        <h4>Analyzing Weather & Seasonal Advisory</h4>
-                        <p>
-                          Checking climate, monsoon patterns, and rainfall conditions for <strong>{destination}</strong> in <strong>{getMonthNameFromDate(startDate)}</strong>...
-                        </p>
-                      </div>
-                    </div>
-                  ) : weatherAdvisory ? (
-                    weatherAdvisory.hasAdvisory ? (
-                      <div className={`weather-advisory-box alert-${weatherAdvisory.level || "warning"}`}>
-                        <div className="weather-advisory-header">
-                          <div className="weather-icon-badge warning">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" />
-                              <line x1="12" y1="9" x2="12" y2="13" />
-                              <line x1="12" y1="17" x2="12.01" y2="17" />
-                            </svg>
-                          </div>
-                          <div className="weather-title-wrap">
-                            <div className="weather-badge-row">
-                              <span className="weather-status-badge warning">{weatherAdvisory.badge || "Weather Advisory"}</span>
-                              {weatherAdvisory.season && (
-                                <span className="weather-season-pill">{weatherAdvisory.season}</span>
-                              )}
-                              <span className="weather-month-pill">{weatherAdvisory.monthName}</span>
-                            </div>
-                            <h4 className="weather-headline">{weatherAdvisory.headline}</h4>
-                          </div>
-                        </div>
-
-                        <p className="weather-summary-text">{weatherAdvisory.summary}</p>
-
-                        {weatherAdvisory.risks && weatherAdvisory.risks.length > 0 && (
-                          <div className="weather-risks-section">
-                            <span className="weather-risks-title">Noted Weather Factors:</span>
-                            <ul className="weather-risks-list">
-                              {weatherAdvisory.risks.map((risk, idx) => (
-                                <li key={idx}>
-                                  <span className="risk-dot" />
-                                  <span>{risk}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-
-                        {weatherAdvisory.suggestedAlternates && weatherAdvisory.suggestedAlternates.length > 0 && (
-                          <div className="weather-alternates-section">
-                            <div className="alternates-header">
-                              <h5>Recommended Favorable Alternatives for {weatherAdvisory.monthName}:</h5>
-                              <span className="alternates-hint">Better weather & active season during these dates</span>
-                            </div>
-                            <div className="weather-alternates-grid">
-                              {weatherAdvisory.suggestedAlternates.map((alt) => (
-                                <div key={alt.destination} className="alternate-card">
-                                  <div className="alt-card-body">
-                                    <div className="alt-title-row">
-                                      <strong>{alt.destination}</strong>
-                                      {alt.region && <span className="alt-region-tag">{alt.region}</span>}
-                                    </div>
-                                    <p className="alt-reason">{alt.reason}</p>
-                                    {alt.bestFor && <span className="alt-best-for">{alt.bestFor}</span>}
-                                  </div>
-                                  <button
-                                    type="button"
-                                    className="alt-switch-button"
-                                    onClick={() => handleSelectAlternateDestination(alt.destination)}
-                                    title={`Switch destination to ${alt.destination}`}
-                                  >
-                                    Switch to {alt.destination} →
-                                  </button>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        <div className={`advisory-ack-container ${advisoryAcknowledged ? "acknowledged" : "pending"}`}>
-                          <label className="advisory-ack-checkbox-label">
-                            <input
-                              type="checkbox"
-                              checked={advisoryAcknowledged}
-                              onChange={(e) => setAdvisoryAcknowledged(e.target.checked)}
-                            />
-                            <span>
-                              I acknowledge the weather advisory for {destination} in {weatherAdvisory.monthName} and choose to proceed with this itinerary.
-                            </span>
-                          </label>
-                          {!advisoryAcknowledged && (
-                            <span className="advisory-unlock-hint">Check this box to accept and unlock the Continue button</span>
-                          )}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="weather-advisory-box favorable">
-                        <div className="weather-advisory-header">
-                          <div className="weather-icon-badge favorable">
-                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                              <polyline points="22 4 12 14.01 9 11.01" />
-                            </svg>
-                          </div>
-                          <div className="weather-title-wrap">
-                            <div className="weather-badge-row">
-                              <span className="weather-status-badge favorable">{weatherAdvisory.badge || "Favorable Weather"}</span>
-                              {weatherAdvisory.season && (
-                                <span className="weather-season-pill favorable">{weatherAdvisory.season}</span>
-                              )}
-                              <span className="weather-month-pill favorable">{weatherAdvisory.monthName}</span>
-                            </div>
-                            <h4 className="weather-headline">{weatherAdvisory.headline}</h4>
-                          </div>
-                        </div>
-                        <p className="weather-summary-text favorable">{weatherAdvisory.summary}</p>
-                      </div>
-                    )
-                  ) : null}
-                </div>
-              )}
-
               {/* Total Budget */}
               <div className="form-group">
                 <label>Total Budget (LKR)</label>
@@ -1617,34 +1358,8 @@ function PlanTrip() {
               )}
 
               <div className="wizard-actions step-1-actions">
-                <button
-                  className={`wizard-next-button ${weatherLoading ? "loading" : ""} ${weatherAdvisory?.hasAdvisory && !advisoryAcknowledged ? "faded-advisory" : ""}`}
-                  type="submit"
-                  disabled={
-                    weatherLoading ||
-                    !destination.trim() ||
-                    !startDate ||
-                    !endDate ||
-                    (weatherAdvisory?.hasAdvisory && !advisoryAcknowledged)
-                  }
-                  title={
-                    weatherLoading
-                      ? "Analyzing weather conditions, please wait..."
-                      : weatherAdvisory?.hasAdvisory && !advisoryAcknowledged
-                      ? "Accept the weather advisory above to unlock and continue"
-                      : "Continue to Hotels"
-                  }
-                >
-                  {weatherLoading ? (
-                    <>
-                      <span className="mini-spinner white"></span>
-                      <span>Checking Weather Advisory...</span>
-                    </>
-                  ) : weatherAdvisory?.hasAdvisory && !advisoryAcknowledged ? (
-                    "Accept Weather Advisory to Continue →"
-                  ) : (
-                    "Continue to Hotels →"
-                  )}
+                <button className="wizard-next-button" type="submit">
+                  Continue to Hotels →
                 </button>
               </div>
             </form>

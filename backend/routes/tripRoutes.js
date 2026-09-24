@@ -3,36 +3,8 @@ const Trip = require("../models/Trip");
 const authMiddleware = require("../middleware/authMiddleware");
 const { getDestinationPhoto } = require("../services/activityImageService");
 const { parseVoiceTripWithGemini } = require("../services/geminiVoiceService");
-const { getWeatherAdvisoryWithGemini } = require("../services/geminiWeatherService");
 
 const router = express.Router();
-
-// POST /api/trips/weather-advisory - Check weather, monsoon, flood and disaster advisories with Gemini AI
-router.post("/weather-advisory", async (req, res) => {
-  try {
-    const { destination, startDate, endDate, startMonth, endMonth, monthName } = req.body;
-    if (!destination || !startDate || !endDate) {
-      return res.status(400).json({ message: "destination, startDate, and endDate are required" });
-    }
-
-    const advisory = await getWeatherAdvisoryWithGemini({
-      destination: String(destination).trim(),
-      startDate: String(startDate).trim(),
-      endDate: String(endDate).trim(),
-      startMonth,
-      endMonth,
-      monthName,
-    });
-
-    res.json({
-      success: true,
-      advisory,
-    });
-  } catch (error) {
-    console.error("Error in /api/trips/weather-advisory:", error);
-    res.status(500).json({ message: "Failed to generate weather advisory", error: error.message });
-  }
-});
 
 // POST /api/trips/parse-voice - Parse natural language or voice input with Gemini AI
 router.post("/parse-voice", async (req, res) => {
