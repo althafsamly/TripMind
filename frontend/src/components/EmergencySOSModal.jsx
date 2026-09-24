@@ -231,6 +231,146 @@ export default function EmergencySOSModal({
   const [searchQuery, setSearchQuery] = useState("");
   const [isHospitalExpanded, setIsHospitalExpanded] = useState(true);
 
+  // Gemini AI Safety Assistant State
+  const [aiQuery, setAiQuery] = useState("");
+  const [aiGuidance, setAiGuidance] = useState(null);
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [aiError, setAiError] = useState("");
+
+  const handleAskGeminiAI = async (queryToAsk) => {
+    const q = (queryToAsk || aiQuery || "").trim();
+    if (!q) return;
+
+    setIsAiLoading(true);
+    setAiError("");
+
+    try {
+      const response = await fetch("http://localhost:5000/api/safety/emergency-assist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query: q,
+          destination,
+          userCoords: currentCoords,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server returned status ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (data.success && data.guidance) {
+        setAiGuidance(data.guidance);
+      } else {
+        throw new Error("Invalid response from safety service");
+      }
+    } catch (err) {
+      console.warn("Safety API fetch fallback triggered:", err.message);
+      const qLower = q.toLowerCase();
+      let fallbackGuidance = {
+        headline: `Emergency First-Aid: Tourist Assistance (${destination})`,
+        urgencyLevel: "Urgent",
+        badge: "🚨 Immediate Emergency Guidance",
+        firstAidSteps: [
+          "Call 1990 (Suwa Seriya Free National Ambulance) immediately if someone is unresponsive.",
+          "Keep the patient calm, resting in a shaded/ventilated area, and monitor breathing.",
+          "Do not offer solid food or drink if the patient feels faint or dizzy.",
+          "Arrange immediate transport to the nearest government or private hospital.",
+        ],
+        warnings: ["Do not hesitate to seek emergency help if symptoms worsen rapidly."],
+        hotline: "1990 Suwa Seriya Ambulance",
+        nearestHospitalRecommendation: nearestHospital?.name || "Nearest District General Hospital",
+        sinhalaPhrases: [
+          {
+            english: "Help, I need medical assistance quickly!",
+            sinhala: "උදව් කරන්න, මට ඉක්මනට වෛද්‍ය උදව් ඕනෙ!",
+            singlishPhonetics: "Udaw karanna, mata ikmanata waidya udaw one!",
+          },
+        ],
+        provider: "offline-safety-kb",
+      };
+
+      if (qLower.includes("snake") || qLower.includes("bite")) {
+        fallbackGuidance = {
+          headline: `Emergency First-Aid: Suspected Snake Bite (${destination})`,
+          urgencyLevel: "Critical",
+          badge: "🚨 Critical Emergency (Call 1990)",
+          firstAidSteps: [
+            "Keep victim completely still and calm. Restrict movement to slow venom absorption.",
+            "Immobilize the bitten limb with a splint at or slightly below heart level.",
+            "Do NOT cut, suck venom, or apply a tight arterial tourniquet.",
+            "Remove rings, watches, or tight clothing around the limb immediately.",
+            "Transport immediately to nearest government hospital (free anti-venom available islandwide).",
+          ],
+          warnings: ["Do not apply ice, herbal pastes, or electric shocks."],
+          hotline: "1990 Suwa Seriya Ambulance",
+          nearestHospitalRecommendation: nearestHospital?.name || "Nearest Provincial General Hospital",
+          sinhalaPhrases: [
+            {
+              english: "Help, someone was bitten by a snake!",
+              sinhala: "උදව් කරන්න, කෙනෙකුට සර්පයෙක් දෂ්ට කළා!",
+              singlishPhonetics: "Udaw karanna, kenekuta sarpayek dashta kala!",
+            },
+          ],
+          provider: "offline-safety-kb",
+        };
+      } else if (qLower.includes("jellyfish") || qLower.includes("marine") || qLower.includes("sea")) {
+        fallbackGuidance = {
+          headline: `Marine First-Aid: Jellyfish / Sea Sting (${destination})`,
+          urgencyLevel: "Urgent",
+          badge: "🌊 Marine First-Aid Guidance",
+          firstAidSteps: [
+            "Exit water immediately to prevent drowning or fainting.",
+            "Rinse generously with SEA WATER (never use fresh tap water).",
+            "Rinse with domestic vinegar for 30 seconds if available.",
+            "Pluck away tentacles with tweezers or card edge (not bare hands).",
+            "Soak affected area in tolerable hot water for 20-40 minutes.",
+          ],
+          warnings: ["Never rub the sting with sand, towel, or hands."],
+          hotline: "1990 Ambulance / 011-2421052 Tourist Police",
+          nearestHospitalRecommendation: nearestHospital?.name || "Nearest Base Hospital",
+          sinhalaPhrases: [
+            {
+              english: "A jellyfish stung me, I need medical help.",
+              sinhala: "මට ජෙලිෆිෂ් කෙනෙක් විද්දා, මට වෛද්‍ය උදව් ඕනෙ.",
+              singlishPhonetics: "Mata jellyfish kenek widda, mata waidya udaw one.",
+            },
+          ],
+          provider: "offline-safety-kb",
+        };
+      } else if (qLower.includes("accident") || qLower.includes("bike") || qLower.includes("fall")) {
+        fallbackGuidance = {
+          headline: `Trauma First-Aid: Road / Scooter Accident (${destination})`,
+          urgencyLevel: "Critical",
+          badge: "🚨 Accident & Trauma Response",
+          firstAidSteps: [
+            "Ensure the road area is safe from ongoing traffic before approaching.",
+            "Check responsiveness. If neck injury is suspected, DO NOT move the patient.",
+            "Control active bleeding by applying firm pressure with clean cloth.",
+            "Dial 1990 (Ambulance) and 119 (Police) immediately.",
+            "Keep the patient warm while awaiting paramedics.",
+          ],
+          warnings: ["Do not offer water or food to an unconscious person."],
+          hotline: "1990 Ambulance & 119 Police Hotline",
+          nearestHospitalRecommendation: nearestHospital?.name || "Nearest Hospital",
+          sinhalaPhrases: [
+            {
+              english: "There was an accident! Send an ambulance quickly!",
+              sinhala: "මෙතන අනතුරක් වුණා! ඉක්මනට ඇම්බියුලන්ස් එකක් එවන්න!",
+              singlishPhonetics: "Metana anathurak wuna! Ikmanata ambulance ekak ewanna!",
+            },
+          ],
+          provider: "offline-safety-kb",
+        };
+      }
+
+      setAiGuidance(fallbackGuidance);
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
   // Initialize or update coordinates when destination or modal opens
   useEffect(() => {
     if (destinationCoords && destinationCoords.lat) {
@@ -502,6 +642,13 @@ export default function EmergencySOSModal({
             >
               👮 Tourist Police
             </button>
+            <button
+              type="button"
+              className={`sos-tab-pill ${activeTab === "ai_assist" ? "active" : ""}`}
+              onClick={() => setActiveTab("ai_assist")}
+            >
+              🤖 Gemini Safety AI
+            </button>
           </div>
 
           {/* TAB 1: Hospitals View */}
@@ -685,6 +832,145 @@ export default function EmergencySOSModal({
                   </a>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* TAB 4: Gemini Safety AI View */}
+          {activeTab === "ai_assist" && (
+            <div className="sos-tab-content ai-assist-view">
+              <div className="sos-ai-banner">
+                <span className="sos-ai-sparkle">✨</span>
+                <div>
+                  <h4 className="sos-ai-banner-title">Gemini AI Emergency & First-Aid Assistant</h4>
+                  <p className="sos-ai-banner-sub">
+                    Immediate triage, step-by-step first-aid protocols, and local Sinhala phrases for {destination}.
+                  </p>
+                </div>
+              </div>
+
+              {/* Quick Emergency Situation Badges */}
+              <div className="sos-ai-quick-tags-container">
+                <span className="sos-ai-quick-label">Tap common emergency scenario:</span>
+                <div className="sos-ai-quick-tags">
+                  {[
+                    { label: "🐍 Snake / Leech Bite", q: "Suspected snake or leech bite while hiking" },
+                    { label: "🌊 Marine / Jellyfish", q: "Stung by jellyfish while swimming in the ocean" },
+                    { label: "🏍️ Road / Scooter Crash", q: "Motorbike accident on road with bleeding" },
+                    { label: "🤢 Food Illness / Fever", q: "Severe stomach poisoning, dehydration, and vomiting" },
+                    { label: "🧗 Ankle Sprain / Fall", q: "Fell on hiking trail, swollen ankle and cannot walk" },
+                  ].map((item) => (
+                    <button
+                      key={item.label}
+                      type="button"
+                      className="sos-ai-chip-btn"
+                      onClick={() => {
+                        setAiQuery(item.q);
+                        handleAskGeminiAI(item.q);
+                      }}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Custom Query Input */}
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleAskGeminiAI();
+                }}
+                className="sos-ai-input-form"
+              >
+                <input
+                  type="text"
+                  placeholder="Or describe symptoms (e.g. burn, wasp sting, allergy)..."
+                  value={aiQuery}
+                  onChange={(e) => setAiQuery(e.target.value)}
+                  className="sos-ai-input"
+                />
+                <button
+                  type="submit"
+                  disabled={isAiLoading || !aiQuery.trim()}
+                  className="sos-ai-submit-btn"
+                >
+                  {isAiLoading ? "Analyzing..." : "Ask AI ➔"}
+                </button>
+              </form>
+
+              {/* Loading State */}
+              {isAiLoading && (
+                <div className="sos-ai-loading-box">
+                  <div className="sos-ai-spinner" />
+                  <p>Gemini AI is generating medical triage & safety instructions...</p>
+                </div>
+              )}
+
+              {/* AI Guidance Result Card */}
+              {aiGuidance && !isAiLoading && (
+                <div className={`sos-ai-result-card urgency-${(aiGuidance.urgencyLevel || "urgent").toLowerCase()}`}>
+                  <div className="sos-ai-result-header">
+                    <span className="sos-ai-urgency-badge">{aiGuidance.badge || "🚨 Emergency Advisory"}</span>
+                    <span className="sos-ai-provider-tag">Powered by Gemini AI</span>
+                  </div>
+
+                  <h3 className="sos-ai-result-title">{aiGuidance.headline}</h3>
+
+                  {/* Immediate Action Steps */}
+                  <div className="sos-ai-steps-section">
+                    <h5 className="sos-ai-section-label">📋 Immediate Action Steps:</h5>
+                    <ol className="sos-ai-steps-list">
+                      {aiGuidance.firstAidSteps?.map((step, idx) => (
+                        <li key={idx}>
+                          <strong>Step {idx + 1}:</strong> {step}
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+
+                  {/* Warnings */}
+                  {aiGuidance.warnings && aiGuidance.warnings.length > 0 && (
+                    <div className="sos-ai-warning-box">
+                      <strong>⚠️ Critical Warnings:</strong>
+                      <ul>
+                        {aiGuidance.warnings.map((warn, idx) => (
+                          <li key={idx}>{warn}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Hospital & Hotline Recommendation */}
+                  <div className="sos-ai-hotline-row">
+                    <div className="sos-ai-hotline-info">
+                      <span className="hotline-sub">Recommended Emergency Hotline</span>
+                      <strong className="hotline-main">{aiGuidance.hotline || "1990 Suwa Seriya"}</strong>
+                    </div>
+                    <a
+                      href={`tel:${(aiGuidance.hotline || "1990").replace(/[^0-9]/g, "").slice(0, 4) || "1990"}`}
+                      className="sos-ai-call-action-btn"
+                    >
+                      📞 Dial Now
+                    </a>
+                  </div>
+
+                  {/* Local Sinhala Phrases */}
+                  {aiGuidance.sinhalaPhrases && aiGuidance.sinhalaPhrases.length > 0 && (
+                    <div className="sos-ai-phrases-section">
+                      <h5 className="sos-ai-section-label">🗣️ Show this to Sri Lankan Locals / Tuk-Tuk Drivers:</h5>
+                      <div className="sos-ai-phrases-list">
+                        {aiGuidance.sinhalaPhrases.map((phrase, idx) => (
+                          <div key={idx} className="sos-ai-phrase-card">
+                            <span className="phrase-english">{phrase.english}</span>
+                            <span className="phrase-sinhala">{phrase.sinhala}</span>
+                            <span className="phrase-phonetics">"{phrase.singlishPhonetics}"</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>

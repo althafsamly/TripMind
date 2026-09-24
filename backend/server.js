@@ -10,6 +10,7 @@ const activityRoutes = require("./routes/activityRoutes");
 const imageRoutes = require("./routes/imageRoutes");
 const vehicleRoutes = require("./routes/vehicleRoutes");
 const foodRoutes = require("./routes/foodRoutes");
+const safetyRoutes = require("./routes/safetyRoutes");
 
 const path = require("path");
 
@@ -25,6 +26,7 @@ app.use("/api/activities", activityRoutes);
 app.use("/api/images", imageRoutes);
 app.use("/api/vehicles", vehicleRoutes);
 app.use("/api/food", foodRoutes);
+app.use("/api/safety", safetyRoutes);
 
 app.get("/", (req, res) => {
   res.send("Trip Planner API is running");

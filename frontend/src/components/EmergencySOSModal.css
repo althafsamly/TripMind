@@ -703,3 +703,335 @@
 .floating-sos-icon {
   font-size: 18px;
 }
+
+/* Gemini Safety AI Assistant View */
+.ai-assist-view {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  animation: sos-fade-in 0.25s ease-out;
+}
+
+.sos-ai-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.12), rgba(129, 140, 248, 0.08));
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 16px;
+  padding: 14px 16px;
+}
+
+.sos-ai-sparkle {
+  font-size: 24px;
+}
+
+.sos-ai-banner-title {
+  margin: 0;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #38bdf8;
+}
+
+.sos-ai-banner-sub {
+  margin: 3px 0 0;
+  font-size: 11.5px;
+  color: #94a3b8;
+  line-height: 1.4;
+}
+
+.sos-ai-quick-tags-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sos-ai-quick-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.sos-ai-quick-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sos-ai-chip-btn {
+  background: #1e293b;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  color: #e2e8f0;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.sos-ai-chip-btn:hover {
+  background: #334155;
+  border-color: #38bdf8;
+  color: #38bdf8;
+  transform: translateY(-1px);
+}
+
+.sos-ai-input-form {
+  display: flex;
+  gap: 8px;
+}
+
+.sos-ai-input {
+  flex: 1;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 12.5px;
+  color: #f8fafc;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.sos-ai-input:focus {
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+}
+
+.sos-ai-submit-btn {
+  background: linear-gradient(135deg, #0284c7, #2563eb);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 16px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.sos-ai-submit-btn:hover:not(:disabled) {
+  opacity: 0.92;
+  transform: translateY(-1px);
+}
+
+.sos-ai-submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sos-ai-loading-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  gap: 12px;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.sos-ai-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid rgba(56, 189, 248, 0.2);
+  border-top-color: #38bdf8;
+  border-radius: 50%;
+  animation: sos-ai-spin 0.8s linear infinite;
+}
+
+@keyframes sos-ai-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.sos-ai-result-card {
+  background: #151b27;
+  border: 1px solid #233149;
+  border-radius: 18px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  animation: sos-fade-in 0.25s ease-out;
+}
+
+.sos-ai-result-card.urgency-critical {
+  border-left: 4px solid #ef4444;
+}
+
+.sos-ai-result-card.urgency-urgent {
+  border-left: 4px solid #f59e0b;
+}
+
+.sos-ai-result-card.urgency-moderate {
+  border-left: 4px solid #38bdf8;
+}
+
+.sos-ai-result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sos-ai-urgency-badge {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 20px;
+  letter-spacing: 0.3px;
+}
+
+.sos-ai-provider-tag {
+  font-size: 10px;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.sos-ai-result-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #f1f5f9;
+  line-height: 1.35;
+}
+
+.sos-ai-section-label {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #cbd5e1;
+}
+
+.sos-ai-steps-list {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sos-ai-steps-list li {
+  font-size: 12px;
+  color: #cbd5e1;
+  line-height: 1.45;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 8px 12px;
+  border-radius: 8px;
+  border-left: 2px solid #38bdf8;
+}
+
+.sos-ai-steps-list li strong {
+  color: #38bdf8;
+  margin-right: 6px;
+}
+
+.sos-ai-warning-box {
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 11.5px;
+  color: #fbbf24;
+}
+
+.sos-ai-warning-box strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.sos-ai-warning-box ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.sos-ai-warning-box li {
+  margin-bottom: 2px;
+}
+
+.sos-ai-hotline-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #1e293b;
+  border-radius: 12px;
+  padding: 10px 14px;
+}
+
+.sos-ai-hotline-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.sos-ai-hotline-info .hotline-sub {
+  font-size: 10px;
+  color: #94a3b8;
+  text-transform: uppercase;
+}
+
+.sos-ai-hotline-info .hotline-main {
+  font-size: 13.5px;
+  color: #f8fafc;
+}
+
+.sos-ai-call-action-btn {
+  background: #ef4444;
+  color: white;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 8px 14px;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.sos-ai-call-action-btn:hover {
+  background: #dc2626;
+}
+
+.sos-ai-phrases-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sos-ai-phrases-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sos-ai-phrase-card {
+  display: flex;
+  flex-direction: column;
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  padding: 10px 12px;
+  gap: 3px;
+}
+
+.sos-ai-phrase-card .phrase-english {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.sos-ai-phrase-card .phrase-sinhala {
+  font-size: 13px;
+  font-weight: 700;
+  color: #38bdf8;
+}
+
+.sos-ai-phrase-card .phrase-phonetics {
+  font-size: 11.5px;
+  font-style: italic;
+  color: #cbd5e1;
+}
