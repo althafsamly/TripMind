@@ -2217,6 +2217,44 @@
   }
 }
 
+/* ==========================================================================
+   Smart Seasonal Destination Recommendation Cards
+   ========================================================================== */
+.seasonal-recommendations-wrapper {
+  background: linear-gradient(135deg, #f0fdf4 0%, #ecfeff 100%);
+  border: 1.5px solid #86efac;
+  border-radius: 16px;
+  padding: 18px 20px;
+  margin-bottom: 22px;
+  animation: fadeInSeasonal 0.3s ease-in-out;
+}
+
+@keyframes fadeInSeasonal {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.seasonal-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.seasonal-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
 /* ================= WEATHER & SEASONAL ADVISORY ================= */
 .weather-advisory-container {
   margin: 18px 0 24px 0;
@@ -2324,11 +2362,151 @@
   flex: 1;
 }
 
+.seasonal-badge-row,
 .weather-badge-row {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+.seasonal-badge-tag {
+  display: inline-block;
+  background: #15803d;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  letter-spacing: 0.3px;
+  width: fit-content;
+}
+
+.seasonal-ai-pill {
+  font-size: 10px;
+  font-weight: 700;
+  background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+  color: #4f46e5;
+  border: 1px solid #c7d2fe;
+  padding: 3px 8px;
+  border-radius: 6px;
+  letter-spacing: 0.2px;
+  text-transform: uppercase;
+}
+
+.seasonal-analyzing-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #047857;
+  background: #dcfce7;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.mini-spinner.green {
+  border: 2px solid #86efac;
+  border-top-color: #059669;
+}
+
+.seasonal-weather-note {
+  margin: 0;
+  font-size: 13px;
+  color: #166534;
+  font-weight: 500;
+}
+
+.seasonal-instruction {
+  font-size: 12px;
+  font-weight: 600;
+  color: #047857;
+  background: rgba(255, 255, 255, 0.7);
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+.seasonal-places-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.seasonal-place-card {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  background: #ffffff;
+  border: 1.5px solid #d1fae5;
+  border-radius: 12px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.seasonal-place-card:hover {
+  border-color: #10b981;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
+}
+
+.seasonal-place-card.active-pick {
+  border-color: #059669;
+  background: #f0fdf4;
+  box-shadow: 0 0 0 2px #059669;
+}
+
+.place-card-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.place-card-icon {
+  font-size: 18px;
+}
+
+.place-card-name {
+  font-size: 15px;
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.place-selected-tick {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 700;
+  color: #059669;
+  background: #dcfce7;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.place-card-tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #0284c7;
+  margin-bottom: 4px;
+}
+
+.place-card-summary {
+  margin: 0;
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.dest-helper-note {
+  font-size: 12px;
+  font-weight: 500;
+  color: #059669;
+}
+
+.weather-badge-row {
   margin-bottom: 4px;
 }
 

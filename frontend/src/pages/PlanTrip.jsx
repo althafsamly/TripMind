@@ -20,6 +20,54 @@ const locationInterests = {
   trincomalee: ["Beaches", "Snorkeling", "History", "Relaxation"],
 };
 
+// Smart seasonal destination recommendation based on Sri Lankan monsoon & climate patterns
+function getSeasonalRecommendations(dateStr) {
+  if (!dateStr) return null;
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return null;
+  const month = date.getMonth() + 1; // 1 (Jan) - 12 (Dec)
+
+  // 1. December to April: South & West Coast + Hill Country High Season
+  if (month === 12 || month <= 4) {
+    return {
+      seasonBadge: "South & West Coast Dry Season (Top Travel Months)",
+      weatherHint: "Calm turquoise seas, prime whale watching & sunny hill country views.",
+      destinations: [
+        { name: "Mirissa", tag: "Beach & Whales", desc: "Whale watching, surfing & sunset beach nightlife" },
+        { name: "Galle", tag: "Heritage & Coast", desc: "Historic Dutch Fort, boutique cafes & tranquil bays" },
+        { name: "Ella", tag: "Hill Country", desc: "Nine Arch Bridge, mountain hikes & tea plantation trails" },
+        { name: "Weligama", tag: "Surf & Chill", desc: "Consistent surf breaks, sandy bays & beach cafes" },
+      ],
+    };
+  }
+
+  // 2. May to September: East Coast & Cultural Triangle Dry Season
+  if (month >= 5 && month <= 9) {
+    return {
+      seasonBadge: "East Coast Sunny Season & Cultural Triangle",
+      weatherHint: "Crystal-clear calm waters in the East and dry, sunny weather for heritage sites.",
+      destinations: [
+        { name: "Trincomalee", tag: "Clear Water & Snorkel", desc: "Nilaveli beach, Pigeon Island marine park & calm seas" },
+        { name: "Sigiriya", tag: "Ancient Wonder", desc: "Lion Rock fortress, Pidurangala & dry sunny skies" },
+        { name: "Dambulla", tag: "Heritage & Wildlife", desc: "Cave temples, safari parks & cultural triangle routes" },
+        { name: "Jaffna", tag: "Peninsula & Culture", desc: "Nallur Kandaswamy temple, causeways & authentic food" },
+      ],
+    };
+  }
+
+  // 3. October to November: Inter-Monsoon / Central Highlands Season
+  return {
+    seasonBadge: "Central Highlands & Cultural Heritage",
+    weatherHint: "Misty tea hills, lush green landscapes & vibrant cultural landmarks.",
+    destinations: [
+      { name: "Kandy", tag: "Cultural Capital", desc: "Temple of the Tooth, royal botanical gardens & misty lake" },
+      { name: "Nuwara Eliya", tag: "Little England", desc: "Cool mountain climate, tea estates & colonial bungalows" },
+      { name: "Sigiriya", tag: "Heritage & Nature", desc: "Ancient rock citadel with lush surrounding landscapes" },
+      { name: "Colombo", tag: "City & Flavors", desc: "Galle Face Green, artisanal dining, shopping & museums" },
+    ],
+  };
+}
+
 function PlanTrip() {
   const [searchParams] = useSearchParams();
 
@@ -175,6 +223,64 @@ function PlanTrip() {
   const destinationData = useMemo(() => {
     return getDestinationData(destination);
   }, [destination]);
+
+  // Smart seasonal recommendations state (Dynamic Gemini AI with instant local fallback)
+  const [seasonalRecommendations, setSeasonalRecommendations] = useState(null);
+  const [seasonalLoading, setSeasonalLoading] = useState(false);
+  const [seasonalProvider, setSeasonalProvider] = useState("catalog"); // "gemini" | "catalog"
+
+  useEffect(() => {
+    if (!startDate) {
+      setSeasonalRecommendations(null);
+      setSeasonalProvider("catalog");
+      return;
+    }
+
+    // 1. Immediately provide local fallback so UI responds with 0ms delay
+    const initialFallback = getSeasonalRecommendations(startDate);
+    setSeasonalRecommendations(initialFallback);
+    setSeasonalProvider("catalog");
+
+    // 2. Dynamically fetch AI-generated analysis via backend Gemini AI
+    let isMounted = true;
+    const controller = new AbortController();
+
+    async function loadGeminiSeasonal() {
+      setSeasonalLoading(true);
+      try {
+        const query = new URLSearchParams({
+          startDate,
+          endDate: endDate || "",
+        });
+        const res = await fetch(`http://localhost:5000/api/trips/seasonal-recommendations?${query.toString()}`, {
+          signal: controller.signal,
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (isMounted && data?.recommendations?.destinations?.length > 0) {
+            setSeasonalRecommendations(data.recommendations);
+            setSeasonalProvider(data.recommendations.provider || "gemini");
+          }
+        }
+      } catch (err) {
+        if (err.name !== "AbortError") {
+          console.warn("[PlanTrip] Gemini seasonal fetch error, using local fallback:", err);
+        }
+      } finally {
+        if (isMounted) {
+          setSeasonalLoading(false);
+        }
+      }
+    }
+
+    loadGeminiSeasonal();
+
+    return () => {
+      isMounted = false;
+      controller.abort();
+    };
+  }, [startDate, endDate]);
 
   // Clean Voice Audio Feedback using Browser SpeechSynthesis
   function speakVoiceResponse(text) {
@@ -1396,12 +1502,90 @@ function PlanTrip() {
             </div>
 
             <form onSubmit={handleContinueToHotels} className={`trip-form ${highlightFields ? "highlight-applied" : ""}`}>
-              {/* Destination */}
+              {/* 1. Travel Dates First */}
+              <div className="form-row">
+                <div className="form-group">
+                  <label>1. Travel Start Date</label>
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Travel End Date</label>
+                  <input
+                    type="date"
+                    value={endDate}
+                    min={startDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Smart Seasonal Recommendations Based on Dates */}
+              {seasonalRecommendations && (
+                <div className="seasonal-recommendations-wrapper">
+                  <div className="seasonal-header-row">
+                    <div className="seasonal-title-wrap">
+                      <div className="seasonal-badge-row">
+                        <span className="seasonal-badge-tag">{seasonalRecommendations.seasonBadge}</span>
+                        {seasonalProvider === "gemini" && (
+                          <span className="seasonal-ai-pill">Gemini AI Verified</span>
+                        )}
+                        {seasonalLoading && (
+                          <span className="seasonal-analyzing-pill">
+                            <span className="mini-spinner green" />
+                            Analyzing with Gemini AI...
+                          </span>
+                        )}
+                      </div>
+                      <p className="seasonal-weather-note">{seasonalRecommendations.weatherHint}</p>
+                    </div>
+                    <span className="seasonal-instruction">Click a recommended place or type below:</span>
+                  </div>
+
+                  <div className="seasonal-places-grid">
+                    {seasonalRecommendations.destinations.map((place) => {
+                      const isSelected = (destination || "").toLowerCase().trim() === place.name.toLowerCase().trim();
+                      return (
+                        <button
+                          type="button"
+                          key={place.name}
+                          className={`seasonal-place-card ${isSelected ? "active-pick" : ""}`}
+                          onClick={() => {
+                            setDestination(place.name);
+                            setSelectedHotel(null);
+                            setSelectedActivities([]);
+                            setHotels([]);
+                            setActivities([]);
+                          }}
+                        >
+                          <div className="place-card-top">
+                            <strong className="place-card-name">{place.name}</strong>
+                            {isSelected && <span className="place-selected-tick">✓ Selected</span>}
+                          </div>
+                          <span className="place-card-tag">{place.tag}</span>
+                          <p className="place-card-summary">{place.desc}</p>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* 2. Destination in Sri Lanka (pre-filled by click or typed) */}
               <div className="form-group">
-                <label>Destination in Sri Lanka</label>
+                <label>
+                  2. Destination in Sri Lanka
+                  <span className="dest-helper-note"> (Choose from above or type any destination)</span>
+                </label>
                 <input
                   type="text"
-                  placeholder="e.g. Ella, Kandy, Galle, Mirissa, Sigiriya, Nuwara Eliya"
+                  placeholder="e.g. Ella, Kandy, Galle, Mirissa, Sigiriya, Nuwara Eliya, Jaffna..."
                   value={destination}
                   onChange={(e) => {
                     setDestination(e.target.value);
@@ -1413,6 +1597,7 @@ function PlanTrip() {
                   required
                 />
               </div>
+
 
               {/* Travel Dates */}
               <div className="form-row">
@@ -1565,6 +1750,7 @@ function PlanTrip() {
                   ) : null}
                 </div>
               )}
+
 
               {/* Total Budget */}
               <div className="form-group">
