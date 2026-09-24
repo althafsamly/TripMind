@@ -21,6 +21,54 @@ const locationInterests = {
   trincomalee: ["Beaches", "Snorkeling", "History", "Relaxation"],
 };
 
+// Smart seasonal destination recommendation based on Sri Lankan monsoon & climate patterns
+function getSeasonalRecommendations(dateStr) {
+  if (!dateStr) return null;
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return null;
+  const month = date.getMonth() + 1; // 1 (Jan) - 12 (Dec)
+
+  // 1. December to April: South & West Coast + Hill Country High Season
+  if (month === 12 || month <= 4) {
+    return {
+      seasonBadge: "South & West Coast Dry Season (Top Travel Months)",
+      weatherHint: "Calm turquoise seas, prime whale watching & sunny hill country views.",
+      destinations: [
+        { name: "Mirissa", tag: "Beach & Whales", desc: "Whale watching, surfing & sunset beach nightlife" },
+        { name: "Galle", tag: "Heritage & Coast", desc: "Historic Dutch Fort, boutique cafes & tranquil bays" },
+        { name: "Ella", tag: "Hill Country", desc: "Nine Arch Bridge, mountain hikes & tea plantation trails" },
+        { name: "Weligama", tag: "Surf & Chill", desc: "Consistent surf breaks, sandy bays & beach cafes" },
+      ],
+    };
+  }
+
+  // 2. May to September: East Coast & Cultural Triangle Dry Season
+  if (month >= 5 && month <= 9) {
+    return {
+      seasonBadge: "East Coast Sunny Season & Cultural Triangle",
+      weatherHint: "Crystal-clear calm waters in the East and dry, sunny weather for heritage sites.",
+      destinations: [
+        { name: "Trincomalee", tag: "Clear Water & Snorkel", desc: "Nilaveli beach, Pigeon Island marine park & calm seas" },
+        { name: "Sigiriya", tag: "Ancient Wonder", desc: "Lion Rock fortress, Pidurangala & dry sunny skies" },
+        { name: "Dambulla", tag: "Heritage & Wildlife", desc: "Cave temples, safari parks & cultural triangle routes" },
+        { name: "Jaffna", tag: "Peninsula & Culture", desc: "Nallur Kandaswamy temple, causeways & authentic food" },
+      ],
+    };
+  }
+
+  // 3. October to November: Inter-Monsoon / Central Highlands Season
+  return {
+    seasonBadge: "Central Highlands & Cultural Heritage",
+    weatherHint: "Misty tea hills, lush green landscapes & vibrant cultural landmarks.",
+    destinations: [
+      { name: "Kandy", tag: "Cultural Capital", desc: "Temple of the Tooth, royal botanical gardens & misty lake" },
+      { name: "Nuwara Eliya", tag: "Little England", desc: "Cool mountain climate, tea estates & colonial bungalows" },
+      { name: "Sigiriya", tag: "Heritage & Nature", desc: "Ancient rock citadel with lush surrounding landscapes" },
+      { name: "Colombo", tag: "City & Flavors", desc: "Galle Face Green, artisanal dining, shopping & museums" },
+    ],
+  };
+}
+
 function PlanTrip() {
   const [searchParams] = useSearchParams();
 
@@ -69,7 +117,109 @@ function PlanTrip() {
   const [speechSupported, setSpeechSupported] = useState(true);
 
   const recognitionRef = useRef(null);
+  const voiceTranscriptRef = useRef("");
   const abortControllerRef = useRef(null);
+
+  // Weather & Seasonal Advisory States
+  const [weatherLoading, setWeatherLoading] = useState(false);
+  const [weatherAdvisory, setWeatherAdvisory] = useState(null);
+  const [weatherError, setWeatherError] = useState("");
+  const [advisoryAcknowledged, setAdvisoryAcknowledged] = useState(false);
+  const weatherAbortRef = useRef(null);
+
+  // Helper to convert date string (YYYY-MM-DD) month number to full English Month Name
+  function getMonthNameFromDate(dateStr) {
+    if (!dateStr) return "";
+    const parts = String(dateStr).trim().split("-");
+    if (parts.length >= 2) {
+      const monthNum = parseInt(parts[1], 10);
+      const months = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+      ];
+      if (monthNum >= 1 && monthNum <= 12) {
+        return months[monthNum - 1];
+      }
+    }
+    return "";
+  }
+
+  // Trigger weather, monsoon & seasonal disaster advisory when destination AND dates are set
+  useEffect(() => {
+    const trimmedDest = (destination || "").trim();
+    if (!trimmedDest || trimmedDest.length < 3 || !startDate || !endDate) {
+      setWeatherAdvisory(null);
+      setWeatherLoading(false);
+      setAdvisoryAcknowledged(false);
+      return;
+    }
+
+    if (weatherAbortRef.current) {
+      weatherAbortRef.current.abort();
+    }
+    const controller = new AbortController();
+    weatherAbortRef.current = controller;
+
+    setWeatherLoading(true);
+    setWeatherError("");
+    setAdvisoryAcknowledged(false);
+
+    // Convert date month number into month name before passing to Gemini weather advisory
+    const startMonth = getMonthNameFromDate(startDate);
+    const endMonth = getMonthNameFromDate(endDate);
+    const monthName = startMonth === endMonth ? startMonth : `${startMonth} to ${endMonth}`;
+
+    const timer = setTimeout(async () => {
+      try {
+        const response = await fetch("http://localhost:5000/api/trips/weather-advisory", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
+          body: JSON.stringify({
+            destination: trimmedDest,
+            startDate,
+            endDate,
+            startMonth,
+            endMonth,
+            monthName,
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data?.success && data?.advisory) {
+            setWeatherAdvisory(data.advisory);
+          }
+        } else {
+          throw new Error("Weather advisory returned status " + response.status);
+        }
+      } catch (err) {
+        if (err.name !== "AbortError") {
+          console.warn("Weather advisory fetch error:", err);
+          setWeatherError("Weather advisory service is currently unavailable.");
+        }
+      } finally {
+        if (weatherAbortRef.current === controller) {
+          setWeatherLoading(false);
+        }
+      }
+    }, 450);
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [destination, startDate, endDate]);
+
+  function handleSelectAlternateDestination(altDest) {
+    if (!altDest) return;
+    setDestination(altDest);
+    setSelectedHotel(null);
+    setSelectedActivities([]);
+    setHotels([]);
+    setActivities([]);
+    setAdvisoryAcknowledged(false);
+  }
 
   const navigate = useNavigate();
 
@@ -77,6 +227,64 @@ function PlanTrip() {
   const destinationData = useMemo(() => {
     return getDestinationData(destination);
   }, [destination]);
+
+  // Smart seasonal recommendations state (Dynamic Gemini AI with instant local fallback)
+  const [seasonalRecommendations, setSeasonalRecommendations] = useState(null);
+  const [seasonalLoading, setSeasonalLoading] = useState(false);
+  const [seasonalProvider, setSeasonalProvider] = useState("catalog"); // "gemini" | "catalog"
+
+  useEffect(() => {
+    if (!startDate) {
+      setSeasonalRecommendations(null);
+      setSeasonalProvider("catalog");
+      return;
+    }
+
+    // 1. Immediately provide local fallback so UI responds with 0ms delay
+    const initialFallback = getSeasonalRecommendations(startDate);
+    setSeasonalRecommendations(initialFallback);
+    setSeasonalProvider("catalog");
+
+    // 2. Dynamically fetch AI-generated analysis via backend Gemini AI
+    let isMounted = true;
+    const controller = new AbortController();
+
+    async function loadGeminiSeasonal() {
+      setSeasonalLoading(true);
+      try {
+        const query = new URLSearchParams({
+          startDate,
+          endDate: endDate || "",
+        });
+        const res = await fetch(`http://localhost:5000/api/trips/seasonal-recommendations?${query.toString()}`, {
+          signal: controller.signal,
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (isMounted && data?.recommendations?.destinations?.length > 0) {
+            setSeasonalRecommendations(data.recommendations);
+            setSeasonalProvider(data.recommendations.provider || "gemini");
+          }
+        }
+      } catch (err) {
+        if (err.name !== "AbortError") {
+          console.warn("[PlanTrip] Gemini seasonal fetch error, using local fallback:", err);
+        }
+      } finally {
+        if (isMounted) {
+          setSeasonalLoading(false);
+        }
+      }
+    }
+
+    loadGeminiSeasonal();
+
+    return () => {
+      isMounted = false;
+      controller.abort();
+    };
+  }, [startDate, endDate]);
 
   // Clean Voice Audio Feedback using Browser SpeechSynthesis
   function speakVoiceResponse(text) {
@@ -126,6 +334,7 @@ function PlanTrip() {
     stopSpeaking();
 
     // 4. Reset voice state to idle with explicit user feedback
+    voiceTranscriptRef.current = "";
     setVoiceState("idle");
     setTranscriptText("Voice AI stopped. Tap to speak or type your plan.");
   }
@@ -329,6 +538,28 @@ function PlanTrip() {
     }
   }
 
+  // Complete voice listening immediately and process whatever has been captured so far
+  function handleCompleteVoiceListening() {
+    const textToProcess = (voiceTranscriptRef.current || "").trim();
+
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.onend = null; // Prevent duplicate invocation from onend
+        recognitionRef.current.stop();
+      } catch (e) {
+        console.warn("Speech recognition stop error:", e);
+      }
+      recognitionRef.current = null;
+    }
+
+    if (textToProcess.length >= 3) {
+      handleProcessVoiceTranscript(textToProcess);
+    } else {
+      setVoiceState("idle");
+      setTranscriptText("No speech was detected. Tap to try again or type your plan.");
+    }
+  }
+
   // Interactive Voice Recording handler with live SpeechRecognition
   function handleToggleVoiceListening() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -341,22 +572,20 @@ function PlanTrip() {
       return;
     }
 
+    // If currently listening, tapping the button immediately completes voice capture and processes
     if (voiceState === "listening") {
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-      }
+      handleCompleteVoiceListening();
       return;
     }
 
     try {
       const recognition = new SpeechRecognition();
       recognition.lang = "en-US";
-      recognition.continuous = false;
+      recognition.continuous = true;
       recognition.interimResults = true;
       recognition.maxAlternatives = 1;
       recognitionRef.current = recognition;
-
-      let capturedText = "";
+      voiceTranscriptRef.current = "";
 
       recognition.onstart = () => {
         setVoiceState("listening");
@@ -364,24 +593,22 @@ function PlanTrip() {
       };
 
       recognition.onresult = (event) => {
-        let interim = "";
-        let final = "";
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-          if (event.results[i].isFinal) {
-            final += event.results[i][0].transcript;
-          } else {
-            interim += event.results[i][0].transcript;
-          }
+        let fullTranscript = "";
+        for (let i = 0; i < event.results.length; i++) {
+          fullTranscript += event.results[i][0].transcript;
         }
-        capturedText = final || interim;
-        setTranscriptText(capturedText ? `"${capturedText}"` : "Listening...");
+        const cleanText = fullTranscript.trim();
+        voiceTranscriptRef.current = cleanText;
+        setTranscriptText(cleanText ? `"${cleanText}"` : "Listening...");
       };
 
       recognition.onerror = (event) => {
         console.warn("Speech recognition error:", event.error);
         if (event.error === "no-speech") {
-          setVoiceState("idle");
-          setTranscriptText("No speech was detected. Tap to try again.");
+          if (!voiceTranscriptRef.current || !voiceTranscriptRef.current.trim()) {
+            setVoiceState("idle");
+            setTranscriptText("No speech was detected. Tap to try again.");
+          }
         } else if (event.error === "not-allowed") {
           setVoiceState("error");
           setTranscriptText("Microphone access was denied. Please check your browser permissions or type your plan.");
@@ -681,6 +908,10 @@ function PlanTrip() {
     }
     if (!budget || Number(budget) <= 0) {
       alert("Please enter a valid travel budget.");
+      return;
+    }
+    if (weatherAdvisory?.hasAdvisory && !advisoryAcknowledged) {
+      alert(`Please review the weather advisory for ${destination} before proceeding, or select one of the suggested alternate destinations.`);
       return;
     }
 
