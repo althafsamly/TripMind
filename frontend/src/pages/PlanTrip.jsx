@@ -804,8 +804,8 @@ function PlanTrip() {
       alert("Please enter a valid travel budget.");
       return;
     }
-    if (weatherAdvisory?.hasAdvisory && !advisoryAcknowledged) {
-      alert(`Please review the weather advisory for ${destination} before proceeding, or select one of the suggested alternate destinations.`);
+    if (destination.trim().length >= 3 && startDate && !advisoryAcknowledged) {
+      alert(`Please review the weather advisory for ${destination} and click "I've reviewed the weather advisory and wish to proceed" before continuing.`);
       return;
     }
 
@@ -1409,9 +1409,38 @@ function PlanTrip() {
                     setSelectedActivities([]);
                     setHotels([]);
                     setActivities([]);
+                    setAdvisoryAcknowledged(false);
                   }}
                   required
                 />
+
+                {/* Weather Advisory Acknowledgement — required to proceed when an advisory is active */}
+                {destination && destination.trim().length >= 3 && startDate && (
+                  <div className="dark-form-section advisory-acknowledge-section">
+                    {advisoryAcknowledged ? (
+                      <div className="advisory-ack-confirmed">
+                        <span className="advisory-ack-icon">✓</span>
+                        <span>Weather advisory noted — you're good to proceed.</span>
+                        <button
+                          type="button"
+                          className="advisory-ack-undo-btn"
+                          onClick={() => setAdvisoryAcknowledged(false)}
+                        >
+                          Undo
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        className="advisory-ack-btn"
+                        onClick={() => setAdvisoryAcknowledged(true)}
+                      >
+                        <span className="advisory-ack-check">✓</span>
+                        I've reviewed the weather advisory and wish to proceed
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Travel Dates */}
